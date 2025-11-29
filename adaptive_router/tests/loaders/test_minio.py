@@ -14,6 +14,7 @@ from adaptive_router.models.storage import MinIOSettings
 @pytest.fixture
 def valid_profile_data() -> dict:
     """Create valid profile data for testing."""
+    """Create valid profile data for testing."""
     return {
         "metadata": {
             "n_clusters": 2,
@@ -31,31 +32,10 @@ def valid_profile_data() -> dict:
                 "model_name": "gpt-4",
                 "cost_per_1m_input_tokens": 30.0,
                 "cost_per_1m_output_tokens": 60.0,
-            },
-            {
-                "provider": "anthropic",
-                "model_name": "claude-3-sonnet",
-                "cost_per_1m_input_tokens": 3.0,
-                "cost_per_1m_output_tokens": 15.0,
-            },
+            }
         ],
         "llm_profiles": {
             "openai/gpt-4": [0.05, 0.03],
-            "anthropic/claude-3-sonnet": [0.07, 0.04],
-        },
-        "tfidf_vocabulary": {
-            "vocabulary": {"python": 0, "javascript": 1},
-            "idf": [1.0, 1.2],
-        },
-        "scaler_parameters": {
-            "embedding_scaler": {
-                "mean": [0.5, 0.5],
-                "scale": [0.2, 0.2],
-            },
-            "tfidf_scaler": {
-                "mean": [0.3, 0.3],
-                "scale": [0.1, 0.1],
-            },
         },
     }
 
@@ -176,7 +156,7 @@ class TestMinIOProfileLoaderLoadProfile:
 
         assert profile.metadata.n_clusters == 2
         assert profile.metadata.silhouette_score == 0.45
-        assert len(profile.llm_profiles) == 2
+        assert len(profile.llm_profiles) == 1
         assert (
             profile.metadata.embedding_model == "sentence-transformers/all-MiniLM-L6-v2"
         )

@@ -20,7 +20,6 @@ Basic Usage:
 Advanced Usage:
     >>> from adaptive_router import (
     ...     ClusterEngine,
-    ...     FeatureExtractor,
     ...     LocalFileProfileLoader,
     ...     RouterProfile,
     ... )
@@ -71,8 +70,6 @@ from .models.storage import (
     ClusterCentersData,
     ProfileMetadata,
     RouterProfile,
-    ScalerParameters,
-    ScalerParametersData,
 )
 
 # Configuration types (YAML and routing config)
@@ -89,7 +86,6 @@ from .models.config import (
 # Core ML components
 from .core import (
     ClusterEngine,
-    FeatureExtractor,
 )
 
 # Routing internals and public types
@@ -135,8 +131,6 @@ __all__ = [
     "RouterProfile",
     "ProfileMetadata",
     "ClusterCentersData",
-    "ScalerParameters",
-    "ScalerParametersData",
     # Configuration
     "ModelConfig",
     "YAMLModelsConfig",
@@ -151,7 +145,6 @@ __all__ = [
     # ========================================================================
     # Core components
     "ClusterEngine",
-    "FeatureExtractor",
     # Routing internals
     "ModelFeatureVector",
     "ModelFeatures",

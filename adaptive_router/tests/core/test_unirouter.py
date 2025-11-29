@@ -44,7 +44,7 @@ class TestClusterEngine:
 
         assert engine.n_clusters is None
         assert engine.kmeans is None
-        assert engine.feature_extractor is None
+        assert engine.embedding_model is None
 
     def test_configure_with_custom_params(self) -> None:
         """Test ClusterEngine with custom parameters."""
@@ -234,8 +234,6 @@ class TestRouterServiceMocked:
             RouterProfile,
             ProfileMetadata,
             ClusterCentersData,
-            ScalerParameters,
-            ScalerParametersData,
         )
 
         mock_profile = RouterProfile(
@@ -260,12 +258,6 @@ class TestRouterServiceMocked:
             llm_profiles={
                 "openai/gpt-4": [0.08] * 5,
             },
-            scaler_parameters=ScalerParameters(
-                embedding_scaler=ScalerParametersData(
-                    mean=[0.0] * 100,
-                    scale=[1.0] * 100,
-                ),
-            ),
         )
 
         with patch.object(ModelRouter, "_build_cluster_engine_from_data"):

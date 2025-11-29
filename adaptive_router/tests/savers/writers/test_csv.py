@@ -10,6 +10,7 @@ from adaptive_router.savers.writers.csv import CSVProfileWriter
 def valid_profile_data() -> dict:
     """Create valid profile data for testing."""
     # Full RouterProfile structure with all required fields
+    """Create valid profile data for testing."""
     return {
         "metadata": {
             "n_clusters": 2,
@@ -31,20 +32,6 @@ def valid_profile_data() -> dict:
         ],
         "llm_profiles": {
             "openai/gpt-4": [0.05, 0.03],
-        },
-        "tfidf_vocabulary": {
-            "vocabulary": {"python": 0, "javascript": 1},
-            "idf": [1.0, 1.2],
-        },
-        "scaler_parameters": {
-            "embedding_scaler": {
-                "mean": [0.5, 0.5],
-                "scale": [0.2, 0.2],
-            },
-            "tfidf_scaler": {
-                "mean": [0.3, 0.3],
-                "scale": [0.1, 0.1],
-            },
         },
     }
 

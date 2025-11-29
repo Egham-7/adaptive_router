@@ -36,7 +36,6 @@ from adaptive_router.models.routing import (
 )
 from adaptive_router.models.storage import RouterProfile, MinIOSettings
 from adaptive_router.core.cluster_engine import ClusterEngine
-from adaptive_router.core.feature_extractor import FeatureExtractor
 from adaptive_router.exceptions.core import (
     ModelNotFoundError,
     InvalidModelFormatError,
@@ -257,13 +256,8 @@ class ModelRouter:
             profile.metadata.embedding_model, allow_trust_remote_code
         )
 
-        # Restore feature extractor with scalers and vocabulary
-        feature_extractor = self._restore_feature_extractor(
-            profile, embedding_model, allow_trust_remote_code
-        )
-
         # Restore cluster engine with K-means parameters
-        cluster_engine = self._restore_cluster_engine(profile, feature_extractor)
+        cluster_engine = self._restore_cluster_engine(profile, embedding_model)
 
         return cluster_engine
 
@@ -303,73 +297,16 @@ class ModelRouter:
 
         return embedding_model
 
-    def _restore_feature_extractor(
-        self,
-        profile: RouterProfile,
-        embedding_model: SentenceTransformer,
-        allow_trust_remote_code: bool,
-    ) -> FeatureExtractor:
-        """Restore FeatureExtractor from profile data.
-
-        Args:
-            profile: RouterProfile with stored parameters
-            embedding_model: Loaded SentenceTransformer model
-            allow_trust_remote_code: Trust remote code setting
-
-        Returns:
-            Configured FeatureExtractor
-        """
-        from sklearn.preprocessing import StandardScaler
-        from adaptive_router.core.feature_extractor import FeatureExtractor
-
-        # Create FeatureExtractor
-        feature_extractor = FeatureExtractor(
-            embedding_model=profile.metadata.embedding_model,
-            allow_trust_remote_code=allow_trust_remote_code,
-        )
-
-        # Set config from profile
-        feature_extractor.config = profile.metadata.feature_extraction
-        feature_extractor.normalize_embeddings = (
-            profile.metadata.feature_extraction.normalize_embeddings
-        )
-        feature_extractor.embedding_cache_size = (
-            profile.metadata.feature_extraction.embedding_cache_size
-        )
-
-        # Replace the embedding model (already loaded above)
-        feature_extractor.embedding_model = embedding_model
-
-        # Restore scaler parameters
-        logger.info("Restoring scaler parameters from MinIO data...")
-
-        # Restore embedding scaler
-        feature_extractor.embedding_scaler = StandardScaler()
-        feature_extractor.embedding_scaler.mean_ = np.array(
-            profile.scaler_parameters.embedding_scaler.mean
-        )
-        feature_extractor.embedding_scaler.scale_ = np.array(
-            profile.scaler_parameters.embedding_scaler.scale
-        )
-        feature_extractor.embedding_scaler.n_features_in_ = len(
-            feature_extractor.embedding_scaler.mean_
-        )
-        logger.info("Scaler parameters restored")
-
-        feature_extractor.is_fitted = True
-
-        return feature_extractor
-
     def _restore_cluster_engine(
         self,
         profile: RouterProfile,
-        feature_extractor: FeatureExtractor,
+        embedding_model: SentenceTransformer,
     ) -> ClusterEngine:
         """Restore ClusterEngine from profile data.
 
         Args:
             profile: RouterProfile with cluster data
-            feature_extractor: Configured FeatureExtractor
+            embedding_model: Loaded SentenceTransformer model
 
         Returns:
             Configured ClusterEngine
@@ -379,22 +316,20 @@ class ModelRouter:
 
         # Set configuration from profile
         cluster_engine.n_clusters = profile.cluster_centers.n_clusters
-        cluster_engine.embedding_model = profile.metadata.embedding_model
+        cluster_engine.embedding_model_name = profile.metadata.embedding_model
+        cluster_engine.batch_size = profile.metadata.feature_extraction.batch_size_cpu
 
-        # Set restored components
-        cluster_engine.feature_extractor = feature_extractor
+        # Set restored embedding model
+        cluster_engine.embedding_model = embedding_model
+
+        # Restore K-means
         cluster_engine.kmeans = KMeans(n_clusters=profile.cluster_centers.n_clusters)
-
-        # Restore K-means cluster centers
         cluster_engine.kmeans.cluster_centers_ = np.array(
             profile.cluster_centers.cluster_centers
         )
         # Set required K-means attributes
         cluster_engine.kmeans._n_threads = 1
         cluster_engine.kmeans.n_iter_ = 0  # Already fitted
-        cluster_engine.kmeans.n_features_in_ = (
-            cluster_engine.kmeans.cluster_centers_.shape[1]
-        )
 
         cluster_engine.silhouette = profile.metadata.silhouette_score or 0.0
         cluster_engine.is_fitted_flag = True  # Mark as fitted
@@ -839,10 +774,10 @@ class ModelRouter:
             Dictionary with cluster statistics including n_clusters,
             embedding_model, supported_models, and lambda parameters
         """
-        assert self.cluster_engine.feature_extractor is not None  # For mypy
+        assert self.cluster_engine.embedding_model is not None  # For mypy
         return {
             "n_clusters": self.cluster_engine.n_clusters,
-            "embedding_model": self.cluster_engine.feature_extractor.embedding_model_name,
+            "embedding_model": self.cluster_engine.embedding_model_name,
             "supported_models": self.get_supported_models(),
             "lambda_min": self.lambda_min,
             "lambda_max": self.lambda_max,

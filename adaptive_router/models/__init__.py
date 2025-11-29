@@ -28,8 +28,6 @@ from .storage import (
     MinIOSettings,
     ProfileMetadata,
     RouterProfile,
-    ScalerParameters,
-    ScalerParametersData,
 )
 
 __all__ = [
@@ -49,8 +47,6 @@ __all__ = [
     "ProviderConfig",
     "RouterProfile",
     "RoutingDecision",
-    "ScalerParameters",
-    "ScalerParametersData",
     "TrainingResult",
     "YAMLModelsConfig",
     "YAMLRoutingConfig",

@@ -26,8 +26,6 @@ from adaptive_router.models.storage import (
     ProfileMetadata,
     RoutingConfig,
     RouterProfile,
-    ScalerParameters,
-    ScalerParametersData,
 )
 from adaptive_router.models.train import ProviderConfig, TrainingResult
 
@@ -120,7 +118,6 @@ class Trainer:
 
         # Set config on cluster_engine after configure
         self.cluster_engine.clustering_config = self.clustering_config
-        self.cluster_engine.feature_config = self.feature_config
 
         logger.info(
             f"Initialized Trainer with {len(models)} models and {n_clusters} clusters"
@@ -729,22 +726,13 @@ class Trainer:
         """
         # Assert components are configured for mypy
         assert cluster_engine.kmeans is not None
-        assert cluster_engine.feature_extractor is not None
+        assert cluster_engine.embedding_model is not None
 
         # Extract cluster centers
         cluster_centers = ClusterCentersData(
             n_clusters=self.n_clusters,
             feature_dim=cluster_engine.kmeans.cluster_centers_.shape[1],
             cluster_centers=cluster_engine.kmeans.cluster_centers_.tolist(),
-        )
-
-        # Extract scaler parameters
-        embedding_scaler = ScalerParametersData(
-            mean=cluster_engine.feature_extractor.embedding_scaler.mean_.tolist(),
-            scale=cluster_engine.feature_extractor.embedding_scaler.scale_.tolist(),
-        )
-        scaler_params = ScalerParameters(
-            embedding_scaler=embedding_scaler,
         )
 
         # Build metadata with all configurations
@@ -761,7 +749,6 @@ class Trainer:
             cluster_centers=cluster_centers,
             models=self.models,
             llm_profiles=error_rates,
-            scaler_parameters=scaler_params,
             metadata=metadata,
         )
 

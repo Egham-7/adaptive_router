@@ -4,22 +4,25 @@ Simplified for better DX with Trainer and ModelRouter - accepts only strings.
 """
 
 import logging
+import platform
+import warnings
 
 import numpy as np
 from pydantic import BaseModel
 import numpy.typing as npt
+import torch
+from sentence_transformers import SentenceTransformer
 from sklearn.base import BaseEstimator
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
 from sklearn.preprocessing import normalize
 from sklearn.utils.validation import check_is_fitted
 
-from adaptive_router.core.feature_extractor import FeatureExtractor
 from adaptive_router.exceptions.core import (
     ClusterNotConfiguredError,
     ClusterNotFittedError,
 )
-from adaptive_router.models.storage import ClusteringConfig, FeatureExtractionConfig
+from adaptive_router.models.storage import ClusteringConfig
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +41,7 @@ class ClusterEngine(BaseEstimator):
     """Engine for clustering text inputs using K-means on semantic embeddings.
 
     This class handles the clustering workflow for the adaptive router:
-    1. Extracts semantic embeddings from text
+    1. Extracts semantic embeddings from text using SentenceTransformers
     2. Performs spherical K-means clustering (cosine similarity)
     3. Assigns new texts to clusters
 
@@ -61,15 +64,15 @@ class ClusterEngine(BaseEstimator):
         self.n_init: int | None = None
         self.algorithm: str | None = None
         self.normalization_strategy: str | None = None
-        self.embedding_model: str | None = None
+        self.embedding_model_name: str | None = None
         self.allow_trust_remote_code: bool = False
+        self.batch_size: int = 32
 
         # Configuration objects
         self.clustering_config: ClusteringConfig | None = None
-        self.feature_config: FeatureExtractionConfig | None = None
 
         # Components
-        self.feature_extractor: FeatureExtractor | None = None
+        self.embedding_model: SentenceTransformer | None = None
         self.kmeans: KMeans | None = None
 
         # Fitted state
@@ -85,6 +88,7 @@ class ClusterEngine(BaseEstimator):
         n_init: int = 10,
         embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2",
         allow_trust_remote_code: bool = False,
+        batch_size: int = 32,
     ) -> "ClusterEngine":
         """Configure cluster engine for training.
 
@@ -97,43 +101,53 @@ class ClusterEngine(BaseEstimator):
             n_init: Number of K-means runs with different centroid seeds
             embedding_model: HuggingFace model for semantic embeddings
             allow_trust_remote_code: Allow remote code execution in embedding models
+            batch_size: Batch size for embedding generation
 
         Returns:
             Self for method chaining
         """
-        # Create configs from individual parameters
+        # Create config from parameters
         clustering_config = ClusteringConfig(
             max_iter=max_iter,
             random_state=random_state,
             n_init=n_init,
         )
-        feature_config = FeatureExtractionConfig()
 
         self.clustering_config = clustering_config
-        self.feature_config = feature_config
-
         self.n_clusters = n_clusters
         self.max_iter = clustering_config.max_iter
         self.random_state = clustering_config.random_state
         self.n_init = clustering_config.n_init
         self.algorithm = clustering_config.algorithm
         self.normalization_strategy = clustering_config.normalization_strategy
-        self.embedding_model = embedding_model
+        self.embedding_model_name = embedding_model
         self.allow_trust_remote_code = allow_trust_remote_code
+        self.batch_size = batch_size
 
         # Initialize heavyweight components
         self.initialize_components()
         return self
 
+    @staticmethod
+    def get_device() -> str:
+        """Determine the appropriate device for model loading.
+
+        Returns:
+            Device string: 'cpu' for macOS, 'cuda' if available, otherwise 'cpu'
+        """
+        if platform.system() == "Darwin":
+            return "cpu"
+        return "cuda" if torch.cuda.is_available() else "cpu"
+
     def initialize_components(self) -> None:
-        """Initialize FeatureExtractor and KMeans.
+        """Initialize SentenceTransformer and KMeans.
 
         Raises:
             ClusterNotConfiguredError: If configuration parameters not set
         """
         if (
             self.n_clusters is None
-            or self.embedding_model is None
+            or self.embedding_model_name is None
             or self.max_iter is None
             or self.random_state is None
             or self.n_init is None
@@ -145,21 +159,43 @@ class ClusterEngine(BaseEstimator):
 
         logger.info(f"Initializing ClusterEngine with {self.n_clusters} clusters")
 
-        # Feature extractor
-        self.feature_extractor = FeatureExtractor(
-            embedding_model=self.embedding_model,
-            allow_trust_remote_code=self.allow_trust_remote_code,
+        # Determine device
+        device = self.get_device()
+        logger.info(
+            f"Loading embedding model '{self.embedding_model_name}' on device: {device}"
         )
 
-        # Set config on feature_extractor after creation (must be set by configure())
-        if self.feature_config is not None:
-            self.feature_extractor.config = self.feature_config
-            self.feature_extractor.normalize_embeddings = (
-                self.feature_config.normalize_embeddings
+        # Load SentenceTransformer
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore",
+                message=".*clean_up_tokenization_spaces.*",
+                category=FutureWarning,
             )
-            self.feature_extractor.embedding_cache_size = (
-                self.feature_config.embedding_cache_size
-            )
+            try:
+                self.embedding_model = SentenceTransformer(
+                    self.embedding_model_name,
+                    device=device,
+                    trust_remote_code=self.allow_trust_remote_code,
+                )
+            except (OSError, RuntimeError, ValueError) as e:
+                if self.allow_trust_remote_code:
+                    raise  # Don't retry if explicitly enabled
+
+                logger.warning(
+                    f"Failed loading with trust_remote_code=False, retrying with True: {e}"
+                )
+                self.embedding_model = SentenceTransformer(
+                    self.embedding_model_name,
+                    device=device,
+                    trust_remote_code=True,
+                )
+
+        # Set tokenizer cleanup for future compatibility
+        try:
+            self.embedding_model.tokenizer.clean_up_tokenization_spaces = False
+        except AttributeError:
+            pass
 
         # K-means clusterer with config
         self.kmeans = KMeans(
@@ -177,19 +213,44 @@ class ClusterEngine(BaseEstimator):
         Raises:
             ClusterNotConfiguredError: If components not initialized
         """
-        if self.feature_extractor is None or self.kmeans is None:
+        if self.embedding_model is None or self.kmeans is None:
             raise ClusterNotConfiguredError(
                 "ClusterEngine not configured. Call configure() before use, "
                 "or set components manually during restoration."
             )
 
-    def _normalize_features(
-        self, features: npt.NDArray[np.float64], norm: str = "l2"
+    def _extract_embeddings(
+        self, texts: list[str], show_progress: bool = False
     ) -> npt.NDArray[np.float32]:
-        """Normalize features and convert to float32 for sklearn compatibility.
+        """Extract embeddings from texts using SentenceTransformer.
 
         Args:
-            features: Feature array to normalize
+            texts: List of text strings
+            show_progress: Whether to show progress bar
+
+        Returns:
+            Embeddings array (n_samples × embedding_dim) as float32
+        """
+        assert self.embedding_model is not None  # For mypy
+
+        embeddings = self.embedding_model.encode(
+            texts,
+            show_progress_bar=show_progress,
+            batch_size=self.batch_size,
+            normalize_embeddings=False,  # We normalize separately with L2
+            convert_to_numpy=True,
+        )
+
+        # Ensure float32 dtype for sklearn compatibility
+        return embeddings.astype(np.float32, copy=False)
+
+    def _normalize_features(
+        self, features: npt.NDArray[np.float32], norm: str = "l2"
+    ) -> npt.NDArray[np.float32]:
+        """Normalize features for spherical k-means.
+
+        Args:
+            features: Feature array (float32)
             norm: Normalization strategy ('l1', 'l2', or 'max')
 
         Returns:
@@ -217,7 +278,7 @@ class ClusterEngine(BaseEstimator):
             ValueError: If inputs list is empty
         """
         self._check_configured()
-        assert self.feature_extractor is not None  # For mypy
+        assert self.embedding_model is not None  # For mypy
         assert self.kmeans is not None  # For mypy
 
         if not inputs:
@@ -225,15 +286,18 @@ class ClusterEngine(BaseEstimator):
 
         logger.info(f"Fitting clustering model on {len(inputs)} inputs")
 
-        # Extract semantic embedding features
-        features = self.feature_extractor.fit_transform(inputs)
+        # Extract semantic embeddings
+        logger.info("Generating embeddings...")
+        embeddings = self._extract_embeddings(inputs, show_progress=True)
 
-        # Normalize and convert to float32
+        # Normalize for spherical k-means (cosine similarity)
+        logger.info("Normalizing embeddings...")
         norm_strategy = self.normalization_strategy or "l2"
-        features_normalized = self._normalize_features(features, norm=norm_strategy)
+        embeddings_normalized = self._normalize_features(embeddings, norm=norm_strategy)
 
         # Perform K-means clustering
-        self.kmeans.fit(features_normalized)
+        logger.info("Performing k-means clustering...")
+        self.kmeans.fit(embeddings_normalized)
         self.cluster_assignments = self.kmeans.labels_.astype(np.int32)
 
         # Compute silhouette score
@@ -241,7 +305,7 @@ class ClusterEngine(BaseEstimator):
 
         if len(unique_labels) > 1:
             self.silhouette = float(
-                silhouette_score(features_normalized, self.cluster_assignments)
+                silhouette_score(embeddings_normalized, self.cluster_assignments)
             )
             logger.info(f"Clustering complete. Silhouette score: {self.silhouette:.3f}")
         else:
@@ -267,7 +331,7 @@ class ClusterEngine(BaseEstimator):
             ClusterNotFittedError: If predict is called before fit
         """
         self._check_configured()
-        assert self.feature_extractor is not None  # For mypy
+        assert self.embedding_model is not None  # For mypy
         assert self.kmeans is not None  # For mypy
 
         if not self.is_fitted_flag:
@@ -275,15 +339,15 @@ class ClusterEngine(BaseEstimator):
 
         check_is_fitted(self, ["kmeans"])
 
-        # Extract features
-        features = self.feature_extractor.transform(inputs)
+        # Extract embeddings
+        embeddings = self._extract_embeddings(inputs, show_progress=False)
 
-        # Normalize and convert to float32
+        # Normalize
         norm_strategy = self.normalization_strategy or "l2"
-        features_normalized = self._normalize_features(features, norm=norm_strategy)
+        embeddings_normalized = self._normalize_features(embeddings, norm=norm_strategy)
 
         # Predict clusters
-        return self.kmeans.predict(features_normalized).astype(np.int32)
+        return self.kmeans.predict(embeddings_normalized).astype(np.int32)
 
     def assign_single(self, text: str) -> tuple[int, float]:
         """Assign a single text to the nearest cluster.
@@ -299,7 +363,7 @@ class ClusterEngine(BaseEstimator):
             ClusterNotFittedError: If called before fit
         """
         self._check_configured()
-        assert self.feature_extractor is not None  # For mypy
+        assert self.embedding_model is not None  # For mypy
         assert self.kmeans is not None  # For mypy
 
         if not self.is_fitted_flag:
@@ -307,15 +371,15 @@ class ClusterEngine(BaseEstimator):
 
         check_is_fitted(self, ["kmeans"])
 
-        # Extract features
-        features = self.feature_extractor.transform([text])
+        # Extract embedding
+        embeddings = self._extract_embeddings([text], show_progress=False)
 
-        # Normalize and convert to float32
-        features_normalized = self._normalize_features(features, norm="l2")
+        # Normalize
+        embeddings_normalized = self._normalize_features(embeddings, norm="l2")
 
         # Predict cluster and compute distance
-        cluster_id = int(self.kmeans.predict(features_normalized)[0])
-        distances = self.kmeans.transform(features_normalized)[0]
+        cluster_id = int(self.kmeans.predict(embeddings_normalized)[0])
+        distances = self.kmeans.transform(embeddings_normalized)[0]
         distance = float(distances[cluster_id])
 
         return cluster_id, distance

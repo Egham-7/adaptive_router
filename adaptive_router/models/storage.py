@@ -30,26 +30,31 @@ class ClusterCentersData(BaseModel):
 
 
 class ScalerParametersData(BaseModel):
-    """StandardScaler parameters for feature normalization.
+    """StandardScaler parameters for feature normalization (DEPRECATED).
+
+    This is kept for backward compatibility with old profiles but is no longer used.
+    Feature normalization now uses only L2 normalization without StandardScaler.
 
     Attributes:
         mean: Mean values for each feature dimension
         scale: Scale (standard deviation) for each feature dimension
     """
 
-    mean: List[float] = Field(..., description="Feature means")
-    scale: List[float] = Field(..., description="Feature scales")
+    mean: List[float] = Field(..., description="Feature means (deprecated)")
+    scale: List[float] = Field(..., description="Feature scales (deprecated)")
 
 
 class ScalerParameters(BaseModel):
-    """All scaler parameters for feature normalization.
+    """All scaler parameters for feature normalization (DEPRECATED).
+
+    This is kept for backward compatibility with old profiles but is no longer used.
 
     Attributes:
         embedding_scaler: Scaler for semantic embedding features
     """
 
     embedding_scaler: ScalerParametersData = Field(
-        ..., description="Embedding scaler parameters"
+        ..., description="Embedding scaler parameters (deprecated)"
     )
 
 
@@ -150,7 +155,6 @@ class RouterProfile(BaseModel):
         cluster_centers: K-means cluster centroids
         models: List of models included in this profile
         llm_profiles: Model error rates per cluster (model_id -> K error rates)
-        scaler_parameters: StandardScaler parameters for feature normalization
         metadata: Profile metadata (clustering config, silhouette score, etc.)
     """
 
@@ -159,7 +163,6 @@ class RouterProfile(BaseModel):
     llm_profiles: Dict[str, List[float]] = Field(
         ..., description="Model error rates per cluster"
     )
-    scaler_parameters: ScalerParameters = Field(..., description="Scaler parameters")
     metadata: ProfileMetadata = Field(..., description="Profile metadata")
 
     @field_validator("llm_profiles", mode="before")

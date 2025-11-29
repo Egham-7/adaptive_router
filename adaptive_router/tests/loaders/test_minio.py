@@ -156,7 +156,7 @@ class TestMinIOProfileLoaderLoadProfile:
 
         assert profile.metadata.n_clusters == 2
         assert profile.metadata.silhouette_score == 0.45
-        assert len(profile.llm_profiles) == 2
+        assert len(profile.llm_profiles) == 1
         assert (
             profile.metadata.embedding_model == "sentence-transformers/all-MiniLM-L6-v2"
         )

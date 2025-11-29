@@ -257,7 +257,8 @@ class ClusterEngine(BaseEstimator):
             Normalized features as float32 array
         """
         features_normalized = normalize(features, norm=norm, copy=False)
-        return features_normalized.astype(np.float32, copy=False)
+        # Always ensure float32 for sklearn KMeans compatibility
+        return np.asarray(features_normalized, dtype=np.float32)
 
     @property
     def is_fitted(self) -> bool:

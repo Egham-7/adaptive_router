@@ -216,6 +216,8 @@ class ClusterEngine(BaseEstimator):
         # Normalize using configured strategy
         norm_strategy = self.normalization_strategy or "l2"
         features_normalized = normalize(features, norm=norm_strategy, copy=False)
+        # Convert to float32 for sklearn's Cython code
+        features_normalized = features_normalized.astype(np.float32, copy=False)
 
         # Perform K-means clustering
         self.kmeans.fit(features_normalized)
@@ -266,6 +268,8 @@ class ClusterEngine(BaseEstimator):
         # Normalize using configured strategy
         norm_strategy = self.normalization_strategy or "l2"
         features_normalized = normalize(features, norm=norm_strategy, copy=False)
+        # Convert to float32 for sklearn's Cython code
+        features_normalized = features_normalized.astype(np.float32, copy=False)
 
         # Predict clusters
         return self.kmeans.predict(features_normalized).astype(np.int32)
@@ -297,6 +301,8 @@ class ClusterEngine(BaseEstimator):
 
         # Normalize
         features_normalized = normalize(features, norm="l2", copy=False)
+        # Convert to float32 for sklearn's Cython code
+        features_normalized = features_normalized.astype(np.float32, copy=False)
 
         # Predict cluster and compute distance
         cluster_id = int(self.kmeans.predict(features_normalized)[0])

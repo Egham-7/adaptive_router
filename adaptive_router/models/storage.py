@@ -27,28 +27,6 @@ class ClusterCentersData(BaseModel):
     )
 
 
-class FeatureExtractionConfig(BaseModel):
-    """Configuration for feature extraction.
-
-    Attributes:
-        batch_size_cuda: Batch size for CUDA devices
-        batch_size_cpu: Batch size for CPU devices
-        normalize_embeddings: Whether to L2-normalize embeddings
-        embedding_cache_size: LRU cache size for embeddings
-        allow_trust_remote_code: Allow remote code execution in embedding models
-    """
-
-    batch_size_cuda: int = Field(default=128, gt=0, description="Batch size for CUDA")
-    batch_size_cpu: int = Field(default=32, gt=0, description="Batch size for CPU")
-    normalize_embeddings: bool = Field(
-        default=True, description="L2-normalize embeddings"
-    )
-    embedding_cache_size: int = Field(default=50000, gt=0, description="LRU cache size")
-    allow_trust_remote_code: bool = Field(
-        default=False, description="Allow remote code execution"
-    )
-
-
 class ClusteringConfig(BaseModel):
     """Configuration for K-means clustering.
 
@@ -79,19 +57,32 @@ class ProfileMetadata(BaseModel):
         feature_extraction: Feature extraction configuration
         clustering: Clustering configuration
         routing: Routing algorithm configuration
+        lambda_min: Minimum lambda value for cost-quality tradeoff
+        lambda_max: Maximum lambda value for cost-quality tradeoff
+        default_cost_preference: Default cost preference when not specified (0.0=cheap, 1.0=quality)
     """
 
     n_clusters: int = Field(..., gt=0, description="Number of clusters")
     embedding_model: str = Field(..., description="Embedding model name")
     silhouette_score: float | None = Field(default=None, ge=-1.0, le=1.0)
-
-    # Configuration sections with default factories for backward compatibility
-    feature_extraction: FeatureExtractionConfig = Field(
-        default_factory=FeatureExtractionConfig,
-        description="Feature extraction config",
+    embedding_cache_size: int = Field(default=50000, gt=0, description="LRU cache size")
+    allow_trust_remote_code: bool = Field(
+        default=False, description="Allow remote code execution"
     )
     clustering: ClusteringConfig = Field(
         default_factory=ClusteringConfig, description="Clustering config"
+    )
+    lambda_min: float = Field(
+        default=0.0, ge=0.0, description="Minimum lambda for cost-quality tradeoff"
+    )
+    lambda_max: float = Field(
+        default=2.0, ge=0.0, description="Maximum lambda for cost-quality tradeoff"
+    )
+    default_cost_preference: float = Field(
+        default=0.5,
+        ge=0.0,
+        le=1.0,
+        description="Default cost preference (0.0=cheap, 1.0=quality)",
     )
 
 

@@ -21,7 +21,6 @@ from adaptive_router.models.api import Model
 from adaptive_router.models.storage import (
     ClusterCentersData,
     ClusteringConfig,
-    FeatureExtractionConfig,
     MinIOSettings,
     ProfileMetadata,
     RouterProfile,
@@ -90,7 +89,6 @@ class Trainer:
         self.random_seed = random_seed
 
         # Store configurations for profile building
-        self.feature_config = FeatureExtractionConfig()
         self.clustering_config = ClusteringConfig(random_state=random_seed)
 
         # Trained profile (set after training)
@@ -746,7 +744,6 @@ class Trainer:
             n_clusters=self.n_clusters,
             embedding_model=self.embedding_model,
             silhouette_score=float(cluster_engine.silhouette),
-            feature_extraction=self.feature_config,
             clustering=self.clustering_config,
         )
 

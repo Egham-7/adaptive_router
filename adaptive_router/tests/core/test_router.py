@@ -58,7 +58,7 @@ def mock_router():
         },
     )
 
-    def mock_build_cluster_engine(self, profile, allow_trust_remote_code):
+    def mock_build_cluster_engine(self, profile):
         mock_engine = Mock()
         mock_engine.n_clusters = 10
         mock_engine.assign_single = Mock(return_value=(5, 0.15))

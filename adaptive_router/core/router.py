@@ -61,10 +61,6 @@ class ModelRouter:
     def __init__(
         self,
         profile: str | Path | dict[str, Any] | RouterProfile,
-        lambda_min: float = 0.0,
-        lambda_max: float = 2.0,
-        default_cost_preference: float = 0.5,
-        allow_trust_remote_code: bool = False,
     ) -> None:
         """Initialize ModelRouter from profile.
 
@@ -99,15 +95,20 @@ class ModelRouter:
             f"Initializing ModelRouter with {n_clusters} clusters and {len(models)} models"
         )
 
+        allow_trust_remote_code = profile.metadata.allow_trust_remote_code
+
         if allow_trust_remote_code:
             logger.warning(
                 "WARNING: allow_trust_remote_code=True enables execution of remote code "
                 "from embedding models. This should only be used with trusted models."
             )
 
-        self.cluster_engine = self._build_cluster_engine_from_data(
-            profile, allow_trust_remote_code
-        )
+        self.cluster_engine = self._build_cluster_engine_from_data(profile)
+
+        # Read routing parameters from profile with sensible defaults
+        self.lambda_min = profile.metadata.lambda_min
+        self.lambda_max = profile.metadata.lambda_max
+        self.default_cost_preference = profile.metadata.default_cost_preference
 
         logger.info(
             f"Loaded cluster engine: {n_clusters} clusters, "
@@ -145,10 +146,6 @@ class ModelRouter:
         if not self.model_features:
             raise ModelNotFoundError("No valid model features found in llm_profiles")
 
-        self.lambda_min = lambda_min
-        self.lambda_max = lambda_max
-        self.default_cost_preference = default_cost_preference
-
         all_costs = [f.cost_per_1m_tokens for f in self.model_features.values()]
         self.min_cost = min(all_costs)
         self.max_cost = max(all_costs)
@@ -162,15 +159,11 @@ class ModelRouter:
         self, cost_bias: float | None, request_cost_bias: float | None
     ) -> float:
         """Resolve cost preference from multiple sources."""
-        return (
-            cost_bias
-            if cost_bias is not None
-            else (
-                request_cost_bias
-                if request_cost_bias is not None
-                else self.default_cost_preference
-            )
-        )
+        if cost_bias is not None:
+            return cost_bias
+        if request_cost_bias is not None:
+            return request_cost_bias
+        return self.default_cost_preference
 
     def _get_models_to_score(
         self, allowed_model_ids: list[str] | None
@@ -300,7 +293,6 @@ class ModelRouter:
     def _build_cluster_engine_from_data(
         self,
         profile: RouterProfile,
-        allow_trust_remote_code: bool,
     ) -> ClusterEngine:
         """Build ClusterEngine from storage profile data.
 
@@ -311,6 +303,8 @@ class ModelRouter:
         Returns:
             Reconstructed ClusterEngine
         """
+
+        allow_trust_remote_code = profile.metadata.allow_trust_remote_code
         # Load and configure embedding model
         embedding_model = self._load_embedding_model(
             profile.metadata.embedding_model, allow_trust_remote_code
@@ -502,55 +496,31 @@ class ModelRouter:
     def from_profile(
         cls,
         profile: RouterProfile,
-        lambda_min: float = 0.0,
-        lambda_max: float = 2.0,
-        default_cost_preference: float = 0.5,
-        allow_trust_remote_code: bool = False,
     ) -> ModelRouter:
         return cls(
             profile=profile,
-            lambda_min=lambda_min,
-            lambda_max=lambda_max,
-            default_cost_preference=default_cost_preference,
-            allow_trust_remote_code=allow_trust_remote_code,
         )
 
     @classmethod
     def from_minio(
         cls,
         settings: MinIOSettings,
-        lambda_min: float = 0.0,
-        lambda_max: float = 2.0,
-        default_cost_preference: float = 0.5,
-        allow_trust_remote_code: bool = False,
     ) -> ModelRouter:
         loader = MinIOProfileLoader.from_settings(settings)
         profile = loader.load_profile()
         return cls.from_profile(
             profile=profile,
-            lambda_min=lambda_min,
-            lambda_max=lambda_max,
-            default_cost_preference=default_cost_preference,
-            allow_trust_remote_code=allow_trust_remote_code,
         )
 
     @classmethod
     def from_local_file(
         cls,
         profile_path: str | Path,
-        lambda_min: float = 0.0,
-        lambda_max: float = 2.0,
-        default_cost_preference: float = 0.5,
-        allow_trust_remote_code: bool = False,
     ) -> ModelRouter:
         loader = LocalFileProfileLoader(profile_path=Path(profile_path))
         profile = loader.load_profile()
         return cls.from_profile(
             profile=profile,
-            lambda_min=lambda_min,
-            lambda_max=lambda_max,
-            default_cost_preference=default_cost_preference,
-            allow_trust_remote_code=allow_trust_remote_code,
         )
 
     def _filter_models_by_request(self, models: list[Model]) -> list[str] | None:

@@ -313,7 +313,8 @@ class ClusterEngine(BaseEstimator):
         embeddings = self._extract_embeddings(inputs, show_progress=False)
 
         # Normalize
-        embeddings_normalized = self._normalize_features(embeddings, norm="l2")
+        norm_strategy = self.normalization_strategy or "l2"
+        embeddings_normalized = self._normalize_features(embeddings, norm=norm_strategy)
 
         # Predict clusters
         return self.kmeans.predict(embeddings_normalized).astype(np.int32)

@@ -5,13 +5,8 @@ This script migrates existing profiles by merging llm_profiles into models.
 After migration, the v1 format is no longer supported.
 
 Usage:
-    # Local files
+    # Local files only
     python scripts/migrate_profile.py input.json output.json
-
-    # MinIO S3
-    python scripts/migrate_profile.py \
-        minio://bucket/old.json \
-        minio://bucket/new.json
 """
 
 import argparse
@@ -68,11 +63,13 @@ def load_data(path: str) -> dict:
     """Load profile data from local file or MinIO."""
     if path.startswith("minio://"):
         logger.info(f"Loading from MinIO: {path}")
-        from adaptive_router.loaders.minio import MinIOProfileLoader
-
-        loader = MinIOProfileLoader.from_env()
-        profile = loader.load_profile()
-        return profile.model_dump()
+        # Note: MinIO loading from scripts requires explicit settings
+        # For now, only support local file migration
+        raise ValueError(
+            "MinIO loading not supported in migration script. "
+            "Please download profile to local file first, migrate it, "
+            "then upload the migrated version."
+        )
     else:
         logger.info(f"Loading from file: {path}")
         with open(path, "r") as f:
@@ -86,10 +83,13 @@ def save_data(data: dict, path: str) -> None:
 
     if path.startswith("minio://"):
         logger.info(f"Saving to MinIO: {path}")
-        from adaptive_router.savers.minio import MinIOProfileSaver
-
-        saver = MinIOProfileSaver.from_env()
-        saver.save_profile(profile)
+        # Note: MinIO saving from scripts requires explicit settings
+        # For now, only support local file migration
+        raise ValueError(
+            "MinIO saving not supported in migration script. "
+            "Please migrate to local file first, "
+            "then upload manually to MinIO."
+        )
     else:
         logger.info(f"Saving to file: {path}")
         Path(path).parent.mkdir(parents=True, exist_ok=True)
@@ -99,10 +99,10 @@ def save_data(data: dict, path: str) -> None:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="One-time migration: RouterProfile v1 to v2"
+        description="One-time migration: RouterProfile v1 to v2 (local files only)"
     )
-    parser.add_argument("input", help="Input path (file or minio://)")
-    parser.add_argument("output", help="Output path (file or minio://)")
+    parser.add_argument("input", help="Input JSON file path")
+    parser.add_argument("output", help="Output JSON file path")
     parser.add_argument(
         "--validate-only", action="store_true", help="Only validate, don't save"
     )

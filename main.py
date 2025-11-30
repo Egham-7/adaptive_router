@@ -53,7 +53,7 @@ logger = logging.getLogger(__name__)
 
 def extract_model_ids_from_profile(profile: RouterProfile) -> list[str]:
     """Extract model IDs from a RouterProfile."""
-    return list(profile.llm_profiles.keys())
+    return [model.unique_id() for model in profile.models]
 
 
 async def create_model_router(

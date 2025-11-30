@@ -754,10 +754,9 @@ class ModelRouter:
             Dictionary with cluster statistics including n_clusters,
             embedding_model, supported_models, and lambda parameters
         """
-        assert self.cluster_engine.feature_extractor is not None  # For mypy
         return {
             "n_clusters": self.cluster_engine.n_clusters,
-            "embedding_model": self.cluster_engine.feature_extractor.embedding_model_name,
+            "embedding_model": self.cluster_engine.embedding_model_name,
             "supported_models": self.get_supported_models(),
             "lambda_min": self.lambda_min,
             "lambda_max": self.lambda_max,

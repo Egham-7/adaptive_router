@@ -6,7 +6,6 @@ strongly typed to catch data corruption early and provide better IDE support.
 """
 
 import math
-from typing import Any
 from pydantic import BaseModel, Field, ValidationInfo, field_validator, model_validator
 
 from adaptive_router.models.api import Model

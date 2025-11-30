@@ -46,6 +46,7 @@ dependencies = [
   "polars>=1.35.2",
   # TOML parsing for training script (Python < 3.11)
   "tomli>=2.0.0,<3; python_version < '3.11'",
+  "einops>=0.8.1",
 ]
 
 [project.urls]

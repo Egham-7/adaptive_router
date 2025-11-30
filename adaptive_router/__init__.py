@@ -75,8 +75,6 @@ from .models.storage import (
 # Configuration types (YAML and routing config)
 from .models.config import (
     ModelConfig,
-    YAMLModelsConfig,
-    YAMLRoutingConfig,
 )
 
 # ============================================================================
@@ -133,8 +131,6 @@ __all__ = [
     "ClusterCentersData",
     # Configuration
     "ModelConfig",
-    "YAMLModelsConfig",
-    "YAMLRoutingConfig",
     # ========================================================================
     # Tier 2.5: Public Routing Types (clean API)
     # ========================================================================

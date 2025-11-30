@@ -47,6 +47,28 @@ class ClusteringConfig(BaseModel):
     )
 
 
+class ClusterStats(BaseModel):
+    """Statistics about clustering results.
+
+    Attributes:
+        n_clusters: Number of clusters
+        n_samples: Total number of samples
+        silhouette_score: Clustering quality metric (-1 to 1)
+        cluster_sizes: Dictionary mapping cluster ID to number of samples
+        min_cluster_size: Size of smallest cluster
+        max_cluster_size: Size of largest cluster
+        avg_cluster_size: Average cluster size
+    """
+
+    n_clusters: int
+    n_samples: int
+    silhouette_score: float
+    cluster_sizes: dict[int, int]
+    min_cluster_size: int
+    max_cluster_size: int
+    avg_cluster_size: float
+
+
 class ProfileMetadata(BaseModel):
     """Metadata about the clustering profile.
 
@@ -65,7 +87,6 @@ class ProfileMetadata(BaseModel):
     n_clusters: int = Field(..., gt=0, description="Number of clusters")
     embedding_model: str = Field(..., description="Embedding model name")
     silhouette_score: float | None = Field(default=None, ge=-1.0, le=1.0)
-    embedding_cache_size: int = Field(default=50000, gt=0, description="LRU cache size")
     allow_trust_remote_code: bool = Field(
         default=False, description="Allow remote code execution"
     )

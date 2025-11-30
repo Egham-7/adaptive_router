@@ -5,10 +5,8 @@ Simplified for better DX with Trainer and ModelRouter - accepts only strings.
 
 import logging
 import platform
-import warnings
 
 import numpy as np
-from pydantic import BaseModel
 import numpy.typing as npt
 import torch
 from sentence_transformers import SentenceTransformer
@@ -22,19 +20,9 @@ from adaptive_router.exceptions.core import (
     ClusterNotConfiguredError,
     ClusterNotFittedError,
 )
-from adaptive_router.models.storage import ClusteringConfig
+from adaptive_router.models.storage import ClusteringConfig, ClusterStats
 
 logger = logging.getLogger(__name__)
-
-
-class ClusterStats(BaseModel):
-    n_clusters: int
-    n_samples: int
-    silhouette_score: float
-    cluster_sizes: dict[int, int]
-    min_cluster_size: int
-    max_cluster_size: int
-    avg_cluster_size: float
 
 
 class ClusterEngine(BaseEstimator):
@@ -166,30 +154,11 @@ class ClusterEngine(BaseEstimator):
         )
 
         # Load SentenceTransformer
-        with warnings.catch_warnings():
-            warnings.filterwarnings(
-                "ignore",
-                message=".*clean_up_tokenization_spaces.*",
-                category=FutureWarning,
-            )
-            try:
-                self.embedding_model = SentenceTransformer(
-                    self.embedding_model_name,
-                    device=device,
-                    trust_remote_code=self.allow_trust_remote_code,
-                )
-            except (OSError, RuntimeError, ValueError) as e:
-                if self.allow_trust_remote_code:
-                    raise  # Don't retry if explicitly enabled
-
-                logger.warning(
-                    f"Failed loading with trust_remote_code=False, retrying with True: {e}"
-                )
-                self.embedding_model = SentenceTransformer(
-                    self.embedding_model_name,
-                    device=device,
-                    trust_remote_code=True,
-                )
+        self.embedding_model = SentenceTransformer(
+            self.embedding_model_name,
+            device=device,
+            trust_remote_code=self.allow_trust_remote_code,
+        )
 
         # Set tokenizer cleanup for future compatibility
         try:

@@ -9,11 +9,6 @@ from .api import (
     ModelSelectionRequest,
     ModelSelectionResponse,
 )
-from .config import (
-    ModelConfig,
-    YAMLModelsConfig,
-    YAMLRoutingConfig,
-)
 from .health import HealthResponse
 from .routing import (
     ModelFeatureVector,
@@ -25,14 +20,18 @@ from .routing import (
 from .train import ProviderConfig, TrainingResult
 from .storage import (
     ClusterCentersData,
+    ClusterStats,
     MinIOSettings,
     ProfileMetadata,
     RouterProfile,
 )
 
+from .config import ModelConfig
+
 __all__ = [
     "Alternative",
     "ClusterCentersData",
+    "ClusterStats",
     "HealthResponse",
     "MinIOSettings",
     "Model",
@@ -48,6 +47,4 @@ __all__ = [
     "RouterProfile",
     "RoutingDecision",
     "TrainingResult",
-    "YAMLModelsConfig",
-    "YAMLRoutingConfig",
 ]

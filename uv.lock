@@ -70,7 +70,7 @@ requires-dist = [
     { name = "pydantic", specifier = ">=2.11.5,<3" },
     { name = "pydantic-settings", specifier = ">=2.0.0,<3" },
     { name = "python-dotenv", specifier = ">=1.0.0,<2" },
-    { name = "scikit-learn", specifier = ">=1.5.0,<2" },
+    { name = "scikit-learn", specifier = ">=1.7.2" },
     { name = "sentence-transformers", specifier = ">=2.7.0,<3" },
     { name = "tomli", marker = "python_full_version < '3.11'", specifier = ">=2.0.0,<3" },
     { name = "torch", specifier = ">=2.2.0,<2.3.0" },

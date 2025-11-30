@@ -36,6 +36,7 @@ class ClusteringConfig(BaseModel):
         n_init: Number of K-means initializations
         algorithm: K-means algorithm ('lloyd' or 'elkan')
         normalization_strategy: Feature normalization ('l2', 'l1', or 'max')
+        n_iter: Actual K-means iterations from training
     """
 
     max_iter: int = Field(default=300, gt=0, description="K-means max iterations")
@@ -44,6 +45,9 @@ class ClusteringConfig(BaseModel):
     algorithm: str = Field(default="lloyd", description="K-means algorithm")
     normalization_strategy: str = Field(
         default="l2", description="Feature normalization"
+    )
+    n_iter: int = Field(
+        default=0, ge=0, description="Actual K-means iterations from training"
     )
 
 

@@ -347,7 +347,8 @@ class ClusterEngine(BaseEstimator):
         embeddings = self._extract_embeddings([text], show_progress=False)
 
         # Normalize
-        embeddings_normalized = self._normalize_features(embeddings, norm="l2")
+        norm_strategy = self.normalization_strategy or "l2"
+        embeddings_normalized = self._normalize_features(embeddings, norm=norm_strategy)
 
         # Predict cluster and compute distance
         cluster_id = int(self.kmeans.predict(embeddings_normalized)[0])
@@ -389,3 +390,57 @@ class ClusterEngine(BaseEstimator):
             max_cluster_size=int(counts.max()),
             avg_cluster_size=float(counts.mean()),
         )
+
+    @classmethod
+    def from_fitted_state(
+        cls,
+        cluster_centers: np.ndarray,
+        n_clusters: int,
+        embedding_model: SentenceTransformer,
+        embedding_model_name: str,
+        silhouette_score: float = 0.0,
+        clustering_config: ClusteringConfig | None = None,
+    ) -> "ClusterEngine":
+        """Restore a ClusterEngine from fitted state (for router loading).
+
+        Args:
+            cluster_centers: K-means cluster centers array
+            n_clusters: Number of clusters
+            embedding_model: Loaded SentenceTransformer model
+            embedding_model_name: Name of the embedding model
+            silhouette_score: Clustering quality score
+            clustering_config: Clustering configuration
+
+        Returns:
+            Configured ClusterEngine ready for prediction
+        """
+        # Create empty instance
+        engine = cls()
+
+        # Set configuration from clustering_config if provided
+        if clustering_config:
+            engine.clustering_config = clustering_config
+            engine.max_iter = clustering_config.max_iter
+            engine.random_state = clustering_config.random_state
+            engine.n_init = clustering_config.n_init
+            engine.algorithm = clustering_config.algorithm
+            engine.normalization_strategy = clustering_config.normalization_strategy
+
+        # Set core attributes
+        engine.n_clusters = n_clusters
+        engine.embedding_model_name = embedding_model_name
+        engine.embedding_model = embedding_model
+        engine.batch_size = 32  # Default batch size
+
+        # Create KMeans with fitted state
+        engine.kmeans = KMeans(n_clusters=n_clusters)
+        engine.kmeans.cluster_centers_ = cluster_centers
+        engine.kmeans.n_iter_ = clustering_config.n_iter if clustering_config else 0
+        engine.kmeans.n_features_in_ = cluster_centers.shape[1]
+        engine.kmeans._n_threads = 1  # Runtime default for sklearn 1.4+
+
+        # Set fitted state
+        engine.silhouette = silhouette_score
+        engine.is_fitted_flag = True
+
+        return engine

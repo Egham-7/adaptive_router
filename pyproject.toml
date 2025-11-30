@@ -31,7 +31,6 @@ dependencies = [
   "numpy>=1.24.0,<2.0",
   # UniRouter ML Dependencies
   "sentence-transformers>=2.7.0,<3",
-  "scikit-learn>=1.5.0,<2",
   # Utilities
   "python-dotenv>=1.0.0,<2",
   "fastapi>=0.118.2",
@@ -47,6 +46,7 @@ dependencies = [
   # TOML parsing for training script (Python < 3.11)
   "tomli>=2.0.0,<3; python_version < '3.11'",
   "einops>=0.8.1",
+  "scikit-learn>=1.7.2",
 ]
 
 [project.urls]

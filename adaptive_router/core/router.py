@@ -20,7 +20,6 @@ from typing import Any
 
 import numpy as np
 from sentence_transformers import SentenceTransformer
-from sklearn.cluster import KMeans
 
 from adaptive_router.loaders.local import LocalFileProfileLoader
 from adaptive_router.loaders.minio import MinIOProfileLoader
@@ -364,29 +363,16 @@ class ModelRouter:
         Returns:
             Configured ClusterEngine
         """
-        # Create empty ClusterEngine (no heavyweight initialization)
-        cluster_engine = ClusterEngine()
+        cluster_centers = np.array(profile.cluster_centers.cluster_centers)
 
-        # Set configuration from profile
-        cluster_engine.n_clusters = profile.cluster_centers.n_clusters
-        cluster_engine.embedding_model_name = profile.metadata.embedding_model
-
-        # Set the loaded embedding model directly
-        cluster_engine.embedding_model = embedding_model
-
-        # Set up K-means with restored cluster centers
-        cluster_engine.kmeans = KMeans(n_clusters=profile.cluster_centers.n_clusters)
-
-        cluster_engine.kmeans.cluster_centers_ = np.array(
-            profile.cluster_centers.cluster_centers
+        cluster_engine = ClusterEngine.from_fitted_state(
+            cluster_centers=cluster_centers,
+            n_clusters=profile.cluster_centers.n_clusters,
+            embedding_model=embedding_model,
+            embedding_model_name=profile.metadata.embedding_model,
+            silhouette_score=profile.metadata.silhouette_score or 0.0,
+            clustering_config=profile.metadata.clustering,
         )
-        cluster_engine.kmeans.n_iter_ = 0
-        cluster_engine.kmeans.n_features_in_ = (
-            cluster_engine.kmeans.cluster_centers_.shape[1]
-        )
-
-        cluster_engine.silhouette = profile.metadata.silhouette_score or 0.0
-        cluster_engine.is_fitted_flag = True  # Mark as fitted
 
         logger.info(
             f"Built cluster engine from storage data: {profile.cluster_centers.n_clusters} clusters, "

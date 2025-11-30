@@ -744,7 +744,14 @@ class Trainer:
             n_clusters=self.n_clusters,
             embedding_model=self.embedding_model,
             silhouette_score=float(cluster_engine.silhouette),
-            clustering=self.clustering_config,
+            clustering=ClusteringConfig(
+                max_iter=self.clustering_config.max_iter,
+                random_state=self.clustering_config.random_state,
+                n_init=self.clustering_config.n_init,
+                algorithm=self.clustering_config.algorithm,
+                normalization_strategy=self.clustering_config.normalization_strategy,
+                n_iter=cluster_engine.kmeans.n_iter_,
+            ),
         )
 
         return RouterProfile(

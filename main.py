@@ -396,7 +396,6 @@ image = (
     image=image,
     secrets=[modal.Secret.from_name("adaptive-router-secrets")],
     gpu="L40S",
-    memory=8192,
     scaledown_window=600,
     min_containers=0,
     volumes={

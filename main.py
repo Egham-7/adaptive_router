@@ -397,7 +397,7 @@ image = (
     secrets=[modal.Secret.from_name("adaptive-router-secrets")],
     gpu="T4",
     memory=8192,
-    scaledown_window=60,
+    scaledown_window=600,
     min_containers=0,
     volumes={
         "/vol/model_cache": model_cache,

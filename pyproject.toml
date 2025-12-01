@@ -7,7 +7,7 @@ name = "adaptive-router"
 version = "0.1.0"
 description = "Intelligent LLM Infrastructure with Smart Model Selection"
 authors = [{ name = "Botir Khaltaev", email = "botirkhaltaev@llmadaptive.uk" }]
-requires-python = ">=3.10,<4.0"
+requires-python = ">=3.12,<4.0"
 readme = "README.md"
 license = "MIT"
 keywords = ["llm", "ai", "model-selection", "machine-learning", "adaptive"]
@@ -41,8 +41,7 @@ dependencies = [
   "deepeval>=3.7.0",
   "datasets>=4.4.1",
   "polars>=1.35.2",
-  # TOML parsing for training script (Python < 3.11)
-  "tomli>=2.0.0,<3; python_version < '3.11'",
+
   "einops>=0.8.1",
   "scikit-learn>=1.7.2",
   "modal>=1.2.4",
@@ -74,7 +73,7 @@ docs = ["mkdocs>=1.5.0,<2", "mkdocs-material>=9.0.0,<10"]
 
 [tool.black]
 line-length = 88
-target-version = ['py311']
+target-version = ['py312']
 include = '\.pyi?$'
 extend-exclude = '''
 /(

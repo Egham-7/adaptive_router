@@ -383,6 +383,7 @@ image = (
         "polars>=1.35.2",
         "boto3>=1.34.0,<2",
         "datasets>=4.4.1",
+        "deepeval>=3.7.0",
     )
     .env({"SENTENCE_TRANSFORMERS_HOME": "/vol/model_cache"})
     .add_local_dir("adaptive_router", remote_path="/root/adaptive_router")

@@ -70,8 +70,6 @@ jobs:
 
       - name: Check formatting
         run: uv run black . --check --diff --fast
-<<<<<<< Updated upstream
-=======
 
   deploy:
     name: Deploy to Modal (Production)
@@ -97,5 +95,3 @@ jobs:
           MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
           MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
           MODAL_ENVIRONMENT: main
-
->>>>>>> Stashed changes

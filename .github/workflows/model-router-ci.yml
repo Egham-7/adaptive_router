@@ -68,8 +68,8 @@ jobs:
       - name: Run linting
         run: uv run ruff check . --output-format=github
 
-       - name: Check formatting
-         run: uv run black . --check --diff --fast
+      - name: Check formatting
+        run: uv run black . --check --diff --fast
 
   deploy:
     name: Deploy to Modal (Production)
@@ -89,8 +89,9 @@ jobs:
         run: pip install modal>=1.2.4
 
       - name: Deploy to Modal
-        run: modal deploy modal_app.py --name adaptive-router-prod
+        run: modal deploy main.py
         env:
           MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
           MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
+          MODAL_ENVIRONMENT: main
 

@@ -83,9 +83,9 @@ modal cancel adaptive-router
 
 **Modal Image Build Workflow:**
 - The deploy command **must** be run from the repository root so `../adaptive_router` resolves.
-- The image copies both `adaptive_router` (library) and `adaptive_router_app` (FastAPI app) into `/root`.
-- A single `pip_install_from_pyproject("/root/adaptive_router_app/pyproject.toml")` step installs the app plus the library through its path dependency?no manual `pip install -e .` or extra PyPI indexes required.
-- Environment variables (e.g., `SENTENCE_TRANSFORMERS_HOME`) remain available via `.env(...)`, while `PYTHONPATH` no longer needs the library path because it is installed into site-packages.
+- The image copies both `adaptive_router` (library) and `adaptive_router_app` (FastAPI app) into `/root` with `copy=True` so they're available at build time.
+- A single `uv_sync("/root/adaptive_router_app", frozen=True)` step installs all dependencies from `uv.lock` into a virtual environment, ensuring reproducible builds with exact dependency versions. The path dependency on `adaptive_router` is automatically resolved since both directories are in `/root`?no manual `pip install -e .` or extra PyPI indexes required.
+- Environment variables (e.g., `SENTENCE_TRANSFORMERS_HOME`) remain available via `.env(...)`, while `PYTHONPATH` no longer needs the library path because both packages are copied to `/root` (which is on PYTHONPATH).
 
 **Modal Volumes:**
 - `adaptive-router-data`: Stores router profile JSON at `/data/profile.json`

@@ -46,13 +46,15 @@ The adaptive_router service is a unified Python ML package that provides intelli
 
 ## Project Structure
 
-The project is structured as two separate packages:
+The project uses a **UV workspace** structure with unified dependency management:
 
 1. **`adaptive_router/`**: Core ML library package (standalone, installable)
-2. **`app/`**: FastAPI application (depends on library via local path, contains `main.py`, `pyproject.toml`, and `railway.json`)
+2. **`adaptive_router_app/`**: FastAPI application (depends on library via workspace dependency)
 
 ```
-adaptive_router/
+adaptive_router/  # Repository root (workspace root)
+├── pyproject.toml  # Workspace configuration
+├── uv.lock  # Unified lockfile for all packages
 ├── adaptive_router/                          # Core ML library package
 │   ├── __init__.py                           # Library exports for Python import
 │   ├── pyproject.toml                        # Library package configuration
@@ -91,7 +93,7 @@ adaptive_router/
 │       └── unit/                             # Unit tests
 │           ├── models/
 │           └── services/
-├── app/                                      # FastAPI HTTP server (separate package)
+├── adaptive_router_app/                      # FastAPI HTTP server (separate package)
 │   ├── __init__.py
 │   ├── main.py                               # FastAPI entry point (Modal deployment)
 │   ├── pyproject.toml                        # App package configuration
@@ -184,14 +186,15 @@ print(f"Alternatives: {[alt.model_id for alt in response.alternatives]}")
 Run as HTTP API server on Modal with T4 GPU acceleration:
 
 ```bash
-# Install dependencies
-uv install
+# Install dependencies (sync workspace from root)
+uv sync
 
 # Deploy to Modal (requires Modal CLI and account)
-modal deploy adaptive_router_app/adaptive_router_app/main.py
+# Deploy from repository root - Modal will use workspace structure
+modal deploy adaptive_router_app/main.py
 
 # Or run locally in development
-fastapi dev adaptive_router_app/adaptive_router_app/main.py
+fastapi dev adaptive_router_app/main.py
 
 # Server starts on http://0.0.0.0:8000
 # API docs available at http://localhost:8000/docs
@@ -217,15 +220,31 @@ Access interactive API docs at `http://localhost:8000/docs`
 
 ## Development Commands
 
+### Workspace Structure
+
+The project uses a **UV workspace** for unified dependency management:
+
+- **Single lockfile**: `uv.lock` at repository root ensures consistent dependencies
+- **Workspace members**: `adaptive_router` (library) and `adaptive_router_app` (FastAPI app)
+- **Inter-package dependencies**: `adaptive_router_app` depends on `adaptive-router` via `workspace = true`
+- **Modal deployment**: Workspace is copied to `/root/adaptive_router` and synced from app package
+
 ### Local Development
 
 ```bash
 # Install dependencies (library + app)
-# The app automatically installs the library as a local editable dependency
-uv install
+# The project uses a UV workspace - sync from repository root
+# The app automatically depends on the library via workspace dependency
+uv sync  # Syncs entire workspace from root
+
+# Or sync specific package
+uv sync --package adaptive-router-app
+
+# Run commands for specific package
+uv run --package adaptive-router-app pytest
 
 # Start the FastAPI server (development mode with auto-reload)
-fastapi dev adaptive_router_app/adaptive_router_app/main.py
+fastapi dev adaptive_router_app/main.py
 
 # Or use Hypercorn directly (production-like)
 hypercorn adaptive_router_app.main:app --bind 0.0.0.0:8000
@@ -651,16 +670,16 @@ CMD ["fastapi", "dev", "main.py"]
 
 ```bash
 # Deploy to Modal
-modal deploy adaptive_router_app/adaptive_router_app/main.py
+modal deploy adaptive_router_app/main.py
 
 # View logs
-modal logs adaptive_router_app/adaptive_router_app/main.py
+modal logs adaptive-router
 
 # Stop deployment
-modal cancel adaptive_router_app/adaptive_router_app/main.py
+modal cancel adaptive-router
 ```
 
-**Modal Configuration** (in `adaptive_router_app/adaptive_router_app/main.py`):
+**Modal Configuration** (in `adaptive_router_app/main.py`):
 
 - GPU: T4 (16GB VRAM)
 - Memory: 8GB
@@ -711,7 +730,7 @@ modal cancel adaptive_router_app/adaptive_router_app/main.py
 - Verify all dependencies installed: `uv install`
 - Check port availability (default: 8000)
 - For Modal deployment: verify Modal CLI is installed and authenticated
-- Ensure you're using the correct command: `fastapi dev adaptive_router_app/adaptive_router_app/main.py` (local) or `modal deploy adaptive_router_app/adaptive_router_app/main.py` (Modal)
+- Ensure you're using the correct command: `fastapi dev adaptive_router_app/adaptive_router_app/main.py` (local) or `modal deploy adaptive_router_app/main.py` (Modal)
 
 **Modal deployment issues**
 
@@ -733,7 +752,7 @@ modal cancel adaptive_router_app/adaptive_router_app/main.py
 - Verify input format matches ModelSelectionRequest schema
 - Check prompt length is reasonable (no hard limit, but very long prompts are slower)
 - Ensure router profile loaded correctly (check startup logs)
-- Enable debug logging: `DEBUG=true fastapi dev adaptive_router_app/adaptive_router_app/main.py`
+- Enable debug logging: `DEBUG=true fastapi dev adaptive_router_app/main.py`
 
 **Performance issues**
 
@@ -771,7 +790,7 @@ python -c "import psutil; print(f'Memory: {psutil.virtual_memory().percent}%')"
 
 ```bash
 # Start with debug logging
-DEBUG=true fastapi dev adaptive_router_app/adaptive_router_app/main.py
+DEBUG=true fastapi dev adaptive_router_app/main.py
 
 # Check service health
 curl -X GET http://localhost:8000/health
@@ -786,13 +805,13 @@ curl -X POST http://localhost:8000/select-model \
 
 ```bash
 # Deploy to Modal
-modal deploy adaptive_router_app/adaptive_router_app/main.py
+modal deploy adaptive_router_app/main.py
 
 # View logs
-modal logs adaptive_router_app/adaptive_router_app/main.py
+modal logs adaptive-router
 
 # Check GPU availability
-modal run adaptive_router_app/adaptive_router_app/main.py -c "python -c 'import torch; print(torch.cuda.is_available())'"
+modal run adaptive-router -c "python -c 'import torch; print(torch.cuda.is_available())'"
 ```
 
 ## Performance Benchmarks

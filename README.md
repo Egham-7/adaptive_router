@@ -93,7 +93,7 @@ cd adaptive
 uv install
 
 # Development
-fastapi dev adaptive_router_app/adaptive_router_app/main.py
+fastapi dev adaptive_router_app/main.py
 
 # Production
 hypercorn adaptive_router_app.main:app --bind 0.0.0.0:8000
@@ -193,22 +193,28 @@ class ModelSelectionResponse(BaseModel):
 
 ## Development
 
-The project is structured as two separate packages:
+The project is structured as a **UV workspace** with two packages:
 - **`adaptive_router/`**: Core library package (ML routing logic)
-- **`app/`**: FastAPI application (depends on library, contains `main.py` and `pyproject.toml`)
+- **`adaptive_router_app/`**: FastAPI application (depends on library)
 
 ```bash
 # Setup
 git clone https://github.com/Egham-7/adaptive
 cd adaptive
-uv install --all-extras
+uv sync  # Syncs entire workspace from root
 
-# The app automatically depends on the library via local path dependency
-# Library is installed in editable mode for development
+# Or sync specific package
+uv sync --package adaptive-router-app
 
-# Test
+# The app automatically depends on the library via workspace dependency
+# Single uv.lock at root ensures consistent dependencies across packages
+
+# Test (from root)
 uv run pytest
 uv run pytest --cov
+
+# Or run tests for specific package
+uv run --package adaptive-router-app pytest
 
 # Type check & lint
 uv run mypy .

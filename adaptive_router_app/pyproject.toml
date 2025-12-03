@@ -34,9 +34,8 @@ dependencies = [
 ]
 
 [tool.uv.sources]
-# Local path dependency - resolved relative to this pyproject.toml (in adaptive_router_app/)
-# Works on any machine as long as adaptive_router/ is in the project root
-adaptive-router = { path = "../adaptive_router", editable = true }
+# Workspace member dependency
+adaptive-router = { workspace = true }
 
 [project.urls]
 Homepage = "https://llmadaptive.uk"

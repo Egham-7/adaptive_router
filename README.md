@@ -93,10 +93,10 @@ cd adaptive
 uv install
 
 # Development
-fastapi dev main.py
+fastapi dev adaptive_router_app/adaptive_router_app/main.py
 
 # Production
-hypercorn main:app --bind 0.0.0.0:8000
+hypercorn adaptive_router_app.main:app --bind 0.0.0.0:8000
 ```
 
 **Endpoints**:
@@ -193,11 +193,18 @@ class ModelSelectionResponse(BaseModel):
 
 ## Development
 
+The project is structured as two separate packages:
+- **`adaptive_router/`**: Core library package (ML routing logic)
+- **`app/`**: FastAPI application (depends on library, contains `main.py` and `pyproject.toml`)
+
 ```bash
 # Setup
 git clone https://github.com/Egham-7/adaptive
 cd adaptive
 uv install --all-extras
+
+# The app automatically depends on the library via local path dependency
+# Library is installed in editable mode for development
 
 # Test
 uv run pytest
@@ -226,7 +233,10 @@ A: Yes. Use `hypercorn` or deploy via Railway/Docker.
 
 ## Troubleshooting
 
-**Import errors**: Run `uv install` or `pip install -e .`
+**Import errors**: 
+- Run `uv install` to install dependencies
+- The library (`adaptive_router`) is automatically installed as a local editable dependency
+- If issues persist, ensure you're in the project root directory
 
 **Model selection fails**: 
 - Verify profile contains error rate data

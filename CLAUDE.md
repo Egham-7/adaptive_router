@@ -46,10 +46,16 @@ The adaptive_router service is a unified Python ML package that provides intelli
 
 ## Project Structure
 
+The project is structured as two separate packages:
+
+1. **`adaptive_router/`**: Core ML library package (standalone, installable)
+2. **`app/`**: FastAPI application (depends on library via local path, contains `main.py`, `pyproject.toml`, and `railway.json`)
+
 ```
 adaptive_router/
 ├── adaptive_router/                          # Core ML library package
 │   ├── __init__.py                           # Library exports for Python import
+│   ├── pyproject.toml                        # Library package configuration
 │   ├── core/                                 # Core ML routing components
 │   │   ├── __init__.py
 │   │   ├── router.py                         # ModelRouter - main routing logic
@@ -87,7 +93,9 @@ adaptive_router/
 │           └── services/
 ├── app/                                      # FastAPI HTTP server (separate package)
 │   ├── __init__.py
-│   ├── main.py                               # FastAPI application factory (create_app)
+│   ├── main.py                               # FastAPI entry point (Modal deployment)
+│   ├── pyproject.toml                        # App package configuration
+│   ├── railway.json                          # Railway deployment configuration
 │   ├── config.py                             # App configuration (env vars)
 │   ├── health.py                             # Health check endpoints
 │   ├── models.py                             # API-specific models
@@ -102,10 +110,15 @@ adaptive_router/
 │   ├── models/                               # Model management scripts
 │   ├── training/                             # Training scripts
 │   └── utils/                                # Utility scripts
-├── pyproject.toml                            # Dependencies and package configuration
-├── uv.lock                                   # Dependency lock file
+├── train/                                    # Training scripts
+├── uv.lock                                   # Dependency lock file (at root for workspace)
 └── README.md                                 # Service documentation
 ```
+
+**Package Dependencies:**
+- The library (`adaptive_router/`) has its own `pyproject.toml` with ML dependencies (PyTorch, sentence-transformers, scikit-learn, etc.)
+- The app (`pyproject.toml` root) depends on `adaptive-router` via local path dependency
+- Both packages are installed in editable mode during development
 
 ## Environment Configuration
 
@@ -175,10 +188,10 @@ Run as HTTP API server on Modal with T4 GPU acceleration:
 uv install
 
 # Deploy to Modal (requires Modal CLI and account)
-modal deploy main.py
+modal deploy adaptive_router_app/adaptive_router_app/main.py
 
 # Or run locally in development
-fastapi dev main.py
+fastapi dev adaptive_router_app/adaptive_router_app/main.py
 
 # Server starts on http://0.0.0.0:8000
 # API docs available at http://localhost:8000/docs
@@ -207,23 +220,24 @@ Access interactive API docs at `http://localhost:8000/docs`
 ### Local Development
 
 ```bash
-# Install dependencies
+# Install dependencies (library + app)
+# The app automatically installs the library as a local editable dependency
 uv install
 
 # Start the FastAPI server (development mode with auto-reload)
-fastapi dev main.py
+fastapi dev adaptive_router_app/adaptive_router_app/main.py
 
 # Or use Hypercorn directly (production-like)
-hypercorn app.main:create_app() --bind 0.0.0.0:8000
+hypercorn adaptive_router_app.main:app --bind 0.0.0.0:8000
 
 # Start with custom configuration
-HOST=0.0.0.0 PORT=8001 hypercorn app.main:create_app() --bind 0.0.0.0:8001
+HOST=0.0.0.0 PORT=8001 hypercorn adaptive_router_app.main:app --bind 0.0.0.0:8001
 
 # Start with debug logging
-DEBUG=true hypercorn app.main:create_app() --bind 0.0.0.0:8000
+DEBUG=true hypercorn adaptive_router_app.main:app --bind 0.0.0.0:8000
 
 # For multi-process deployment
-hypercorn app.main:create_app() --bind 0.0.0.0:8000 --workers 4
+hypercorn adaptive_router_app.main:app --bind 0.0.0.0:8000 --workers 4
 ```
 
 ### Code Quality
@@ -637,16 +651,16 @@ CMD ["fastapi", "dev", "main.py"]
 
 ```bash
 # Deploy to Modal
-modal deploy main.py
+modal deploy adaptive_router_app/adaptive_router_app/main.py
 
 # View logs
-modal logs main.py
+modal logs adaptive_router_app/adaptive_router_app/main.py
 
 # Stop deployment
-modal cancel main.py
+modal cancel adaptive_router_app/adaptive_router_app/main.py
 ```
 
-**Modal Configuration** (in `main.py`):
+**Modal Configuration** (in `adaptive_router_app/adaptive_router_app/main.py`):
 
 - GPU: T4 (16GB VRAM)
 - Memory: 8GB
@@ -697,7 +711,7 @@ modal cancel main.py
 - Verify all dependencies installed: `uv install`
 - Check port availability (default: 8000)
 - For Modal deployment: verify Modal CLI is installed and authenticated
-- Ensure you're using the correct command: `fastapi dev main.py` (local) or `modal deploy main.py` (Modal)
+- Ensure you're using the correct command: `fastapi dev adaptive_router_app/adaptive_router_app/main.py` (local) or `modal deploy adaptive_router_app/adaptive_router_app/main.py` (Modal)
 
 **Modal deployment issues**
 
@@ -719,7 +733,7 @@ modal cancel main.py
 - Verify input format matches ModelSelectionRequest schema
 - Check prompt length is reasonable (no hard limit, but very long prompts are slower)
 - Ensure router profile loaded correctly (check startup logs)
-- Enable debug logging: `DEBUG=true fastapi dev main.py`
+- Enable debug logging: `DEBUG=true fastapi dev adaptive_router_app/adaptive_router_app/main.py`
 
 **Performance issues**
 
@@ -757,28 +771,28 @@ python -c "import psutil; print(f'Memory: {psutil.virtual_memory().percent}%')"
 
 ```bash
 # Start with debug logging
-DEBUG=true fastapi dev main.py
+DEBUG=true fastapi dev adaptive_router_app/adaptive_router_app/main.py
 
 # Check service health
 curl -X GET http://localhost:8000/health
 
 # Test model selection endpoint
 curl -X POST http://localhost:8000/select-model \
-  -H "Content-Type: application/json" \
-  -d '{"prompt": "Write a sorting algorithm", "cost_bias": 0.5}'
+ -H "Content-Type: application/json" \
+ -d '{"prompt": "Write a sorting algorithm", "cost_bias": 0.5}'
 ```
 
 **Modal Deployment:**
 
 ```bash
 # Deploy to Modal
-modal deploy main.py
+modal deploy adaptive_router_app/adaptive_router_app/main.py
 
 # View logs
-modal logs main.py
+modal logs adaptive_router_app/adaptive_router_app/main.py
 
 # Check GPU availability
-modal run main.py -c "python -c 'import torch; print(torch.cuda.is_available())'"
+modal run adaptive_router_app/adaptive_router_app/main.py -c "python -c 'import torch; print(torch.cuda.is_available())'"
 ```
 
 ## Performance Benchmarks

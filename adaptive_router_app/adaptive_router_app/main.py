@@ -21,12 +21,12 @@ from adaptive_router.models.api import Model, ModelSelectionRequest
 from adaptive_router.models.storage import RouterProfile
 from adaptive_router.exceptions.core import ModelNotFoundError
 
-from app.models import ModelSelectionAPIRequest
-from app.config import AppSettings
-from app.health import HealthCheckResponse, HealthStatus, ServiceHealth
-from app.models import ModelSelectionAPIResponse
+from adaptive_router_app.models import ModelSelectionAPIRequest
+from adaptive_router_app.config import AppSettings
+from adaptive_router_app.health import HealthCheckResponse, HealthStatus, ServiceHealth
+from adaptive_router_app.models import ModelSelectionAPIResponse
 
-from app.utils import resolve_models
+from adaptive_router_app.utils import resolve_models
 
 log_level_name = os.getenv("LOG_LEVEL", "INFO").upper()
 log_level = getattr(logging, log_level_name, logging.INFO)
@@ -351,7 +351,7 @@ def create_app() -> FastAPI:
 # ============================================================================
 # Modal Serverless Deployment
 # ============================================================================
-# Deploy with: modal deploy main.py
+# Deploy with: modal deploy adaptive_router_app/adaptive_router_app/main.py
 # Modal secrets and volumes are configured below.
 # Ensure the profile.json file is available in the adaptive-router-data volume.
 app = modal.App("adaptive-router")
@@ -374,21 +374,19 @@ image = (
         "pydantic>=2.11.5,<3",
         "pydantic-settings>=2.0.0,<3",
         "sentence-transformers>=2.7.0,<3",
-        "python-dotenv>=1.0.0,<2",
         "numpy>=1.24.0,<2.0",
         "scikit-learn>=1.7.2",
-        "httpx>=0.28.1",
-        "methodtools>=0.4.7",
-        "einops>=0.8.1",
         "polars>=1.35.2",
         "boto3>=1.34.0,<2",
         "datasets>=4.4.1",
         "deepeval>=3.7.0",
     )
     .env({"SENTENCE_TRANSFORMERS_HOME": "/vol/model_cache"})
-    .add_local_dir("adaptive_router", remote_path="/root/adaptive_router")
-    .add_local_dir("app", remote_path="/root/app")
-    .add_local_file("main.py", remote_path="/root/main.py")
+    .add_local_dir("../adaptive_router", remote_path="/root/adaptive_router")
+    .add_local_dir("adaptive_router_app", remote_path="/root/adaptive_router_app")
+    .add_local_dir(".", remote_path="/root/adaptive_router_app")  # Add adaptive_router_app directory for pyproject.toml
+    .pip_install("-e", "/root/adaptive_router")  # Install library package in editable mode
+    .pip_install("-e", "/root/adaptive_router_app")  # Install app package in editable mode
 )
 
 
@@ -417,3 +415,8 @@ class AdaptiveRouterService:
     def web_app(self) -> FastAPI:
         """Return FastAPI application for Modal ASGI serving."""
         return create_app()
+
+
+# Expose FastAPI app for Railway deployment
+# Railway will run: hypercorn adaptive_router_app.main:app --bind "[::]:$PORT"
+app = create_app()

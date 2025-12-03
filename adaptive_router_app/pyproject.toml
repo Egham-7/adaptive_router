@@ -3,14 +3,14 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "adaptive-router"
+name = "adaptive-router-app"
 version = "0.1.0"
-description = "Intelligent LLM Infrastructure with Smart Model Selection"
+description = "FastAPI application for Adaptive Router intelligent model selection service"
 authors = [{ name = "Botir Khaltaev", email = "botirkhaltaev@llmadaptive.uk" }]
 requires-python = ">=3.12,<4.0"
 readme = "README.md"
 license = "MIT"
-keywords = ["llm", "ai", "model-selection", "machine-learning", "adaptive"]
+keywords = ["llm", "ai", "model-selection", "fastapi", "api"]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Intended Audience :: Developers",
@@ -19,33 +19,24 @@ classifiers = [
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.12",
   "Topic :: Scientific/Engineering :: Artificial Intelligence",
-  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
   "Typing :: Typed",
 ]
 dependencies = [
+  # Core library dependency (local editable path)
+  "adaptive-router",
   # Data Validation
-  "pydantic>=2.11.5,<3",
   "pydantic-settings>=2.0.0,<3",
-  # ML Framework & Models
-  "torch>=2.2.0,<3.0.0",
-  "numpy>=1.24.0,<2.0",
-  # UniRouter ML Dependencies
-  "sentence-transformers>=2.7.0,<3",
-  # Utilities
-  "python-dotenv>=1.0.0,<2",
+  # API Framework
   "fastapi>=0.118.2",
-  # S3 Storage
-  "boto3>=1.34.0,<2",
-  "httpx>=0.28.1",
-  "methodtools>=0.4.7",
-  "deepeval>=3.7.0",
-  "datasets>=4.4.1",
-  "polars>=1.35.2",
-
-  "einops>=0.8.1",
-  "scikit-learn>=1.7.2",
+  # Serverless Deployment
   "modal>=1.2.4",
 ]
+
+[tool.uv.sources]
+# Local path dependency - resolved relative to this pyproject.toml (in adaptive_router_app/)
+# Works on any machine as long as adaptive_router/ is in the project root
+adaptive-router = { path = "../adaptive_router", editable = true }
 
 [project.urls]
 Homepage = "https://llmadaptive.uk"
@@ -89,13 +80,18 @@ extend-exclude = '''
 '''
 
 
+[tool.hatchling.build]
+# Include adaptive_router_app package
+packages = ["adaptive_router_app"]
+
 [tool.mypy]
 plugins = ["pydantic.mypy"]
 exclude = [
-  "model_data/",
-  "adaptive_router/tests/",
-  "app/tests/",
-  "scripts/models/",
+    "model_data/",
+    "adaptive_router/tests/",
+    "adaptive_router_app/tests/",
+    "scripts/models/",
+    "adaptive_router/",  # Library is now a separate package
 ]
 no_implicit_optional = true
 warn_return_any = false
@@ -113,7 +109,6 @@ module = [
   "langchain_google_genai.*",
   "hypercorn.*",
   "fastapi.*",
-  "httpx.*",
   "pythonjsonlogger.*",
   "langgraph.*",
   "transformers.*",
@@ -129,7 +124,6 @@ module = [
   "rich.*",
   "boto3.*",
   "botocore.*",
-  "methodtools.*",
 ]
 ignore_missing_imports = true
 

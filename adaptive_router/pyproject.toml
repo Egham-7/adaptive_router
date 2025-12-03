@@ -34,6 +34,7 @@ dependencies = [
   "polars>=1.35.2",
   # Evaluation
   "deepeval>=3.7.0",
+  "einops>=0.8.1",
 ]
 
 [project.urls]

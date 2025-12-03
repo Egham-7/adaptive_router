@@ -90,7 +90,7 @@ jobs:
         run: cd adaptive_router_app && uv sync
       
       - name: Deploy to Modal
-        run: cd adaptive_router_app && uv run modal deploy adaptive_router_app/main.py
+        run: cd adaptive_router_app && uv run modal deploy main.py
         env:
           MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
           MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
@@ -115,7 +115,7 @@ jobs:
         run: cd adaptive_router_app && uv sync
       
       - name: Deploy to Modal
-        run: cd adaptive_router_app && uv run modal deploy adaptive_router_app/main.py
+        run: cd adaptive_router_app && uv run modal deploy main.py
         env:
           MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
           MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}

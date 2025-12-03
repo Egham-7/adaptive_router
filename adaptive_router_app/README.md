@@ -36,7 +36,7 @@ uv install
 
 ```bash
 # Start development server with auto-reload
-fastapi dev adaptive_router_app/adaptive_router_app/main.py
+fastapi dev adaptive_router_app/main.py
 
 # Or use Hypercorn directly (production-like)
 hypercorn adaptive_router_app.main:app --bind 0.0.0.0:8000
@@ -59,7 +59,7 @@ pip install modal
 modal token new
 
 # Deploy the application
-modal deploy adaptive_router_app/adaptive_router_app/main.py
+modal deploy adaptive_router_app/main.py
 
 # View logs
 modal logs adaptive-router

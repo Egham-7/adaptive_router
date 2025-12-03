@@ -351,7 +351,7 @@ def create_app() -> FastAPI:
 # ============================================================================
 # Modal Serverless Deployment
 # ============================================================================
-# Deploy with: modal deploy adaptive_router_app/adaptive_router_app/main.py
+# Deploy with: modal deploy adaptive_router_app/main.py
 # Modal secrets and volumes are configured below.
 # Ensure the profile.json file is available in the adaptive-router-data volume.
 app = modal.App("adaptive-router")
@@ -370,8 +370,8 @@ image = (
             "SENTENCE_TRANSFORMERS_HOME": "/vol/model_cache",
         }
     )
-    .add_local_dir("../adaptive_router", remote_path="/root/adaptive_router", copy=True)
-    .add_local_dir(".", remote_path="/root/adaptive_router_app", copy=True)
+    .add_local_dir("../adaptive_router", remote_path="/root/adaptive_router")
+    .add_local_dir(".", remote_path="/root/adaptive_router_app")
     .uv_sync("/root/adaptive_router_app", frozen=True)
 )
 

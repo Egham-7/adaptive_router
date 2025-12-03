@@ -4,13 +4,13 @@ on:
   push:
     branches: [main, dev]
     paths:
-      - 'app/**'
+      - 'adaptive_router_app/**'
       - 'adaptive_router/**'
       - '.github/workflows/adaptive-router-app-ci.yml'
   pull_request:
     branches: [main, dev]
     paths:
-      - 'app/**'
+      - 'adaptive_router_app/**'
       - 'adaptive_router/**'
       - '.github/workflows/adaptive-router-app-ci.yml'
   workflow_dispatch:
@@ -33,15 +33,15 @@ jobs:
           enable-cache: true
       
       - name: Install dependencies
-        run: cd app && uv sync --group dev --group test
+        run: cd adaptive_router_app && uv sync --group dev --group test
       
       - name: Run app tests
-        run: cd app && uv run pytest tests/ --cov=app --cov-report=xml -v
+        run: cd adaptive_router_app && uv run pytest tests/ --cov=adaptive_router_app --cov-report=xml -v
       
       - name: Upload coverage
         uses: codecov/codecov-action@v5
         with:
-          files: ./app/coverage.xml
+          files: ./adaptive_router_app/coverage.xml
           flags: app-python
           fail_ci_if_error: false
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -60,16 +60,16 @@ jobs:
           enable-cache: true
       
       - name: Install dependencies
-        run: cd app && uv sync --group dev
+        run: cd adaptive_router_app && uv sync --group dev
       
       - name: Run type checking
-        run: cd app && uv run mypy app/
+        run: cd adaptive_router_app && uv run mypy adaptive_router_app/
       
       - name: Run linting
-        run: cd app && uv run ruff check app/ --output-format=github
+        run: cd adaptive_router_app && uv run ruff check adaptive_router_app/ --output-format=github
       
       - name: Check formatting
-        run: cd app && uv run black app/ --check --diff --fast
+        run: cd adaptive_router_app && uv run black adaptive_router_app/ --check --diff --fast
 
   deploy-production:
     name: Deploy to Modal (Production)
@@ -87,10 +87,10 @@ jobs:
           enable-cache: true
       
       - name: Install dependencies
-        run: cd app && uv sync
+        run: cd adaptive_router_app && uv sync
       
       - name: Deploy to Modal
-        run: cd app && uv run modal deploy main.py
+        run: cd adaptive_router_app && uv run modal deploy adaptive_router_app/main.py
         env:
           MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
           MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
@@ -112,10 +112,10 @@ jobs:
           enable-cache: true
       
       - name: Install dependencies
-        run: cd app && uv sync
+        run: cd adaptive_router_app && uv sync
       
       - name: Deploy to Modal
-        run: cd app && uv run modal deploy main.py
+        run: cd adaptive_router_app && uv run modal deploy adaptive_router_app/main.py
         env:
           MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
           MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}

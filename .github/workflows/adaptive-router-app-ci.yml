@@ -32,9 +32,6 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
           enable-cache: true
       
-      - name: Install dependencies
-        run: cd adaptive_router_app && uv sync --group dev --group test
-      
       - name: Run app tests
         run: cd adaptive_router_app && uv run pytest tests/ --cov=adaptive_router_app --cov-report=xml -v
       
@@ -58,9 +55,6 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           enable-cache: true
-      
-      - name: Install dependencies
-        run: cd adaptive_router_app && uv sync --group dev
       
       - name: Run type checking
         run: cd adaptive_router_app && uv run mypy adaptive_router_app/
@@ -86,9 +80,6 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
           enable-cache: true
       
-      - name: Install dependencies
-        run: cd adaptive_router_app && uv sync
-      
       - name: Deploy to Modal
         run: cd adaptive_router_app && uv run modal deploy main.py
         env:
@@ -110,9 +101,6 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           enable-cache: true
-      
-      - name: Install dependencies
-        run: cd adaptive_router_app && uv sync
       
       - name: Deploy to Modal
         run: cd adaptive_router_app && uv run modal deploy main.py

@@ -82,18 +82,18 @@ RouterProfile RouterProfile::from_json_string(const std::string& json_str) {
       throw std::invalid_argument("cluster_centers.cluster_centers must be an array");
     }
     if (static_cast<int>(centers_data.size()) != n_clusters) {
-      throw std::invalid_argument("cluster_centers array size (" +
-                                  std::to_string(centers_data.size()) +
-                                  ") does not match n_clusters (" +
-                                  std::to_string(n_clusters) + ")");
+      throw std::invalid_argument(
+          "cluster_centers array size (" + std::to_string(centers_data.size())
+          + ") does not match n_clusters (" + std::to_string(n_clusters) + ")");
     }
 
     profile.cluster_centers.resize(n_clusters, feature_dim);
     for (int i = 0; i < n_clusters; ++i) {
       if (!centers_data[i].is_array() || static_cast<int>(centers_data[i].size()) != feature_dim) {
-        throw std::invalid_argument("Invalid cluster center dimensions at index " + std::to_string(i) +
-                                    ": expected " + std::to_string(feature_dim) +
-                                    " dimensions, got " + std::to_string(centers_data[i].size()));
+        throw std::invalid_argument("Invalid cluster center dimensions at index "
+                                    + std::to_string(i) + ": expected "
+                                    + std::to_string(feature_dim) + " dimensions, got "
+                                    + std::to_string(centers_data[i].size()));
       }
       for (int j_idx = 0; j_idx < feature_dim; ++j_idx) {
         profile.cluster_centers(i, j_idx) = centers_data[i][j_idx].get<float>();
@@ -164,9 +164,9 @@ RouterProfile RouterProfile::from_binary(const std::string& path) {
 
     size_t expected_size = n_clusters * feature_dim * sizeof(float);
     if (centers_bytes.size() != expected_size) {
-      throw std::invalid_argument("cluster_centers data size mismatch: expected " +
-                                  std::to_string(expected_size) + " bytes, got " +
-                                  std::to_string(centers_bytes.size()) + " bytes");
+      throw std::invalid_argument("cluster_centers data size mismatch: expected "
+                                  + std::to_string(expected_size) + " bytes, got "
+                                  + std::to_string(centers_bytes.size()) + " bytes");
     }
 
     profile.cluster_centers.resize(n_clusters, feature_dim);
@@ -189,10 +189,12 @@ RouterProfile RouterProfile::from_binary(const std::string& path) {
         throw std::invalid_argument("Missing 'model_name' in models[" + std::to_string(idx) + "]");
       }
       if (m.find("cost_per_1m_input_tokens") == m.end()) {
-        throw std::invalid_argument("Missing 'cost_per_1m_input_tokens' in models[" + std::to_string(idx) + "]");
+        throw std::invalid_argument("Missing 'cost_per_1m_input_tokens' in models["
+                                    + std::to_string(idx) + "]");
       }
       if (m.find("cost_per_1m_output_tokens") == m.end()) {
-        throw std::invalid_argument("Missing 'cost_per_1m_output_tokens' in models[" + std::to_string(idx) + "]");
+        throw std::invalid_argument("Missing 'cost_per_1m_output_tokens' in models["
+                                    + std::to_string(idx) + "]");
       }
       if (m.find("error_rates") == m.end()) {
         throw std::invalid_argument("Missing 'error_rates' in models[" + std::to_string(idx) + "]");

@@ -55,12 +55,9 @@ RouteResponse Router::route(const float* embedding_data, size_t embedding_size, 
 RouteResponse Router::route(const EmbeddingVector& embedding, float cost_bias) {
   // Validate embedding dimensions
   if (embedding.size() != embedding_dim_) {
-    throw std::invalid_argument(
-      "Embedding dimension mismatch: expected " +
-      std::to_string(embedding_dim_) +
-      " but got " +
-      std::to_string(embedding.size())
-    );
+    throw std::invalid_argument("Embedding dimension mismatch: expected "
+                                + std::to_string(embedding_dim_) + " but got "
+                                + std::to_string(embedding.size()));
   }
 
   // Assign to cluster

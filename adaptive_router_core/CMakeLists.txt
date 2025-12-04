@@ -86,6 +86,25 @@ if(WIN32)
     )
 endif()
 
+# Clang-format target
+find_program(CLANG_FORMAT NAMES clang-format-18 clang-format)
+if(CLANG_FORMAT)
+  file(GLOB_RECURSE ALL_SOURCE_FILES
+    ${CMAKE_SOURCE_DIR}/src/*.cpp
+    ${CMAKE_SOURCE_DIR}/include/*.hpp
+    ${CMAKE_SOURCE_DIR}/tests/*.cpp
+    ${CMAKE_SOURCE_DIR}/bindings/**/*.cpp
+    ${CMAKE_SOURCE_DIR}/bindings/**/*.h
+  )
+  add_custom_target(format ALL
+    COMMAND ${CLANG_FORMAT} -i ${ALL_SOURCE_FILES}
+    COMMENT "Running clang-format on all source files"
+    VERBATIM
+  )
+  # Make format run before building the library
+  add_dependencies(adaptive_core format)
+endif()
+
 # Tests (optional, controlled by BUILD_TESTING)
 option(BUILD_TESTING "Build tests" OFF)
 if(BUILD_TESTING)

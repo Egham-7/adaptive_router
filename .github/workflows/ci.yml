@@ -169,10 +169,10 @@ jobs:
         shell: bash
         run: |
           if [ "${{ runner.os }}" = "Windows" ]; then
-            # Windows builds to build/ with --config flag
-            cmake --build build --config ${{ matrix.build_type }} --parallel
+            # Windows: CMake preset creates files in build/build/ (uses --config at build time)
+            cmake --build build/build --config ${{ matrix.build_type }} --parallel
           else
-            # Linux/macOS builds to build/build/Release or build/build/Debug
+            # Linux/macOS: CMake preset creates files in build/build/{Release|Debug}
             cmake --build build/build/${{ matrix.build_type }} --parallel
           fi
 
@@ -181,7 +181,7 @@ jobs:
         shell: bash
         run: |
           if [ "${{ runner.os }}" = "Windows" ]; then
-            ctest --test-dir build -C ${{ matrix.build_type }} --output-on-failure
+            ctest --test-dir build/build -C ${{ matrix.build_type }} --output-on-failure
           else
             ctest --test-dir build/build/${{ matrix.build_type }} --output-on-failure
           fi

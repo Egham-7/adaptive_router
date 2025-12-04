@@ -10,6 +10,13 @@ std::pair<int, float> ClusterEngine::assign(const EmbeddingVector& embedding) {
     return {-1, 0.0f};
   }
 
+  // Validate embedding dimension matches centroid dimension
+  int expected_dim = static_cast<int>(centroids_.cols());
+  if (embedding.size() != expected_dim) {
+    // Dimension mismatch: return error sentinel
+    return {-1, 0.0f};
+  }
+
   // Compute squared Euclidean distances to all centroids
   int best_cluster = 0;
   float best_distance = std::numeric_limits<float>::max();

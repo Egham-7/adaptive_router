@@ -192,7 +192,7 @@ jobs:
         with:
           name: adaptive-core-${{ matrix.os }}-${{ matrix.arch }}-${{ matrix.build_type }}-py${{ matrix.python }}
           path: |
-            adaptive_router_core/build/build/${{ matrix.build_type }}/*adaptive_core*
+            adaptive_router_core/build/build/${{ matrix.build_type }}/*adaptive_core.*
             adaptive_router_core/build/build/${{ matrix.build_type }}/*adaptive_c*
             adaptive_router_core/build/build/${{ matrix.build_type }}/bindings/python/*adaptive_core_ext*
           retention-days: 7

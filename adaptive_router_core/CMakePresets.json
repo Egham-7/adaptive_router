@@ -7,58 +7,67 @@
   },
   "configurePresets": [
     {
-      "name": "default",
-      "displayName": "Default Config",
+      "name": "conan-default",
+      "displayName": "Conan Default Config",
       "description": "Default build using Conan toolchain",
-      "binaryDir": "${sourceDir}/build",
+      "hidden": true,
       "generator": "Ninja",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release",
         "CMAKE_CXX_STANDARD": "23",
         "CMAKE_CXX_STANDARD_REQUIRED": "ON",
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
         "BUILD_TESTING": "ON"
+      }
+    },
+    {
+      "name": "conan-debug",
+      "displayName": "Debug Build",
+      "description": "Debug build using Conan toolchain",
+      "inherits": "conan-default",
+      "binaryDir": "${sourceDir}/build/build/Debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
       },
       "toolchainFile": "${sourceDir}/build/conan_toolchain.cmake"
     },
     {
-      "name": "debug",
-      "inherits": "default",
-      "displayName": "Debug Build",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug"
-      }
-    },
-    {
-      "name": "release",
-      "inherits": "default",
+      "name": "conan-release",
       "displayName": "Release Build",
+      "description": "Release build using Conan toolchain",
+      "inherits": "conan-default",
+      "binaryDir": "${sourceDir}/build/build/Release",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release"
-      }
+      },
+      "toolchainFile": "${sourceDir}/build/conan_toolchain.cmake"
     }
   ],
   "buildPresets": [
     {
-      "name": "default",
-      "configurePreset": "default",
+      "name": "conan-debug",
+      "configurePreset": "conan-debug",
       "jobs": 0
     },
     {
-      "name": "debug",
-      "configurePreset": "debug",
-      "jobs": 0
-    },
-    {
-      "name": "release",
-      "configurePreset": "release",
+      "name": "conan-release",
+      "configurePreset": "conan-release",
       "jobs": 0
     }
   ],
   "testPresets": [
     {
-      "name": "default",
-      "configurePreset": "default",
+      "name": "conan-debug",
+      "configurePreset": "conan-debug",
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "jobs": 0
+      }
+    },
+    {
+      "name": "conan-release",
+      "configurePreset": "conan-release",
       "output": {
         "outputOnFailure": true
       },

@@ -18,6 +18,7 @@ struct RoutingConfig {
   float lambda_min = 0.0f;
   float lambda_max = 2.0f;
   float default_cost_preference = 0.5f;
+  int max_alternatives = 5;
 };
 
 struct ProfileMetadata {

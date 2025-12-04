@@ -180,6 +180,15 @@ char** adaptive_router_get_supported_models(AdaptiveRouter* router, size_t* coun
 
     for (size_t i = 0; i < models.size(); ++i) {
       result[i] = str_duplicate(models[i]);
+      if (!result[i]) {
+        // Allocation failed, clean up all previously allocated strings
+        for (size_t j = 0; j < i; ++j) {
+          free(result[j]);
+        }
+        free(result);
+        *count = 0;
+        return nullptr;
+      }
     }
 
     return result;

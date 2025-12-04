@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <stdexcept>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -45,6 +46,11 @@ void ModelScorer::set_lambda_params(float lambda_min, float lambda_max) {
 
 std::vector<ModelScore> ModelScorer::score_models(int cluster_id, float cost_bias,
                                                   const std::vector<std::string>& filter) {
+  // Validate cluster_id
+  if (cluster_id < 0) {
+    throw std::invalid_argument("cluster_id must be non-negative, got " + std::to_string(cluster_id));
+  }
+
   std::vector<ModelScore> scores;
 
   // Build filter set if provided
@@ -59,12 +65,15 @@ std::vector<ModelScore> ModelScorer::score_models(int cluster_id, float cost_bia
       continue;
     }
 
-    // Get error rate for this cluster
-    float error_rate = 0.0f;
-    if (cluster_id >= 0 && cluster_id < static_cast<int>(model.error_rates.size())) {
-      error_rate = model.error_rates[cluster_id];
+    // Validate cluster_id is within bounds for this model's error_rates
+    if (cluster_id >= static_cast<int>(model.error_rates.size())) {
+      throw std::invalid_argument("cluster_id " + std::to_string(cluster_id) +
+                                  " is out of bounds for model '" + model.model_id +
+                                  "' which has " + std::to_string(model.error_rates.size()) +
+                                  " error rates");
     }
 
+    float error_rate = model.error_rates[cluster_id];
     float cost = model.cost_per_1m_tokens();
     float normalized_cost = normalize_cost(cost);
 

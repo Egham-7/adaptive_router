@@ -1,5 +1,7 @@
 #include "router.hpp"
 
+#include <stdexcept>
+
 void Router::initialize(const RouterProfile& prof) {
   profile_ = prof;
   embedding_dim_ = static_cast<int>(prof.cluster_centers.cols());
@@ -51,6 +53,16 @@ RouteResponse Router::route(const float* embedding_data, size_t embedding_size, 
 }
 
 RouteResponse Router::route(const EmbeddingVector& embedding, float cost_bias) {
+  // Validate embedding dimensions
+  if (embedding.size() != embedding_dim_) {
+    throw std::invalid_argument(
+      "Embedding dimension mismatch: expected " +
+      std::to_string(embedding_dim_) +
+      " but got " +
+      std::to_string(embedding.size())
+    );
+  }
+
   // Assign to cluster
   auto [cluster_id, distance] = cluster_engine_.assign(embedding);
 
@@ -65,7 +77,8 @@ RouteResponse Router::route(const EmbeddingVector& embedding, float cost_bias) {
     response.selected_model = scores[0].model_id;
 
     // Add alternatives (skip first, which is selected)
-    for (size_t i = 1; i < scores.size() && i <= 5; ++i) {
+    int max_alt = profile_.metadata.routing.max_alternatives;
+    for (size_t i = 1; i < scores.size() && static_cast<int>(i) <= max_alt; ++i) {
       response.alternatives.push_back(scores[i].model_id);
     }
   }

@@ -142,7 +142,7 @@ jobs:
         run: uv sync
 
       - name: Install Conan
-        run: uv tool install conan==2.12.0
+        run: uv tool install conan==2.23.0
 
       - name: Configure Conan
         run: conan profile detect --force
@@ -155,10 +155,9 @@ jobs:
 
       - name: Install Conan dependencies
         working-directory: adaptive_router_core
+        shell: bash
         run: |
-          conan install . --output-folder=build --build=missing \
-            -s build_type=${{ matrix.build_type }} \
-            -s compiler.cppstd=23
+          conan install . --output-folder=build --build=missing -s build_type=${{ matrix.build_type }} -s compiler.cppstd=23
 
       - name: Configure CMake
         working-directory: adaptive_router_core

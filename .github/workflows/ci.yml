@@ -11,9 +11,6 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
-env:
-  UV_CACHE_DIR: /tmp/.uv-cache
-
 jobs:
   # ============================================================
   # Python Workspace: Lint & Type Check
@@ -28,7 +25,6 @@ jobs:
         uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
-          cache-suffix: lint
 
       - name: Setup Python
         run: uv python install 3.12
@@ -36,17 +32,22 @@ jobs:
       - name: Sync workspace
         run: uv sync
 
-      - name: Run ruff
-        run: uv run ruff check --output-format=github
+      - name: Lint library
+        run: uv run --package adaptive-router ruff check --output-format=github
 
-      - name: Check formatting
+      - name: Lint app
+        run: uv run --package adaptive-router-app ruff check --output-format=github
+
+      - name: Format check
         run: uv run ruff format --check
 
       - name: Type check library
-        run: uv run mypy adaptive_router/
+        working-directory: adaptive_router
+        run: uv run mypy .
 
       - name: Type check app
-        run: uv run mypy adaptive_router_app/
+        working-directory: adaptive_router_app
+        run: uv run mypy .
 
   # ============================================================
   # Python Workspace: Test Library & App
@@ -65,7 +66,6 @@ jobs:
         uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
-          cache-suffix: test-py${{ matrix.python }}
 
       - name: Setup Python ${{ matrix.python }}
         run: uv python install ${{ matrix.python }}
@@ -74,10 +74,10 @@ jobs:
         run: uv sync
 
       - name: Test library
-        run: uv run pytest adaptive_router/tests/ -v --tb=short
+        run: uv run --package adaptive-router pytest -v --tb=short
 
       - name: Test app
-        run: uv run pytest adaptive_router_app/tests/ -v --tb=short
+        run: uv run --package adaptive-router-app pytest -v --tb=short
 
   # ============================================================
   # C++ Core: Lint
@@ -112,7 +112,7 @@ jobs:
           - { os: linux, runner: ubuntu-24.04, arch: x86_64, build_type: Release, python: '3.12' }
           - { os: linux, runner: ubuntu-24.04, arch: x86_64, build_type: Release, python: '3.13' }
           - { os: linux, runner: ubuntu-24.04, arch: x86_64, build_type: Debug, python: '3.11' }
-          - { os: macos, runner: macos-13, arch: x86_64, build_type: Release, python: '3.11' }
+          - { os: macos, runner: macos-15, arch: x86_64, build_type: Release, python: '3.11' }
           - { os: macos, runner: macos-15, arch: armv8, build_type: Release, python: '3.12' }
           - { os: windows, runner: windows-2025, arch: x86_64, build_type: Release, python: '3.11' }
           - { os: windows, runner: windows-2025, arch: x86_64, build_type: Debug, python: '3.11' }
@@ -128,7 +128,6 @@ jobs:
         uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
-          cache-suffix: cpp-${{ matrix.os }}-${{ matrix.arch }}-py${{ matrix.python }}
 
       - name: Cache Conan packages
         uses: actions/cache@v4
@@ -153,8 +152,6 @@ jobs:
         run: |
           gcc --version
           g++ --version
-          echo "Verifying C++23 support..."
-          echo '#include <version>' | gcc -x c++ -std=c++23 -E - > /dev/null && echo "C++23 supported" || echo "C++23 NOT supported"
 
       - name: Install Conan dependencies
         working-directory: adaptive_router_core
@@ -185,11 +182,11 @@ jobs:
         shell: bash
         run: |
           if [ "${{ runner.os }}" = "Windows" ]; then
-            PYTHONPATH="adaptive_router_core/build/build/${{ matrix.build_type }}/bindings/python/${{ matrix.build_type }}"
+            MODULE_PATH="${{ github.workspace }}/adaptive_router_core/build/build/${{ matrix.build_type }}/bindings/python/${{ matrix.build_type }}"
           else
-            PYTHONPATH="adaptive_router_core/build/build/${{ matrix.build_type }}/bindings/python"
+            MODULE_PATH="${{ github.workspace }}/adaptive_router_core/build/build/${{ matrix.build_type }}/bindings/python"
           fi
-          uv run python -c "import sys; sys.path.insert(0, '$PYTHONPATH'); import adaptive_core_ext; print(f'Module version: {adaptive_core_ext.__version__}')"
+          python -c "import sys; sys.path.insert(0, '${MODULE_PATH}'); import adaptive_core_ext; print(f'Module version: {adaptive_core_ext.__version__}')"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4

@@ -73,11 +73,19 @@ jobs:
       - name: Sync workspace
         run: uv sync
 
-      - name: Test library
-        run: uv run --package adaptive-router pytest -v --tb=short
+      - name: Test library with coverage
+        run: uv run --package adaptive-router pytest -v --tb=short --cov=adaptive_router --cov-report=xml
 
-      - name: Test app
-        run: uv run --package adaptive-router-app pytest -v --tb=short
+      - name: Test app with coverage
+        run: uv run --package adaptive-router-app pytest -v --tb=short --cov=adaptive_router_app --cov-report=xml --cov-append
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        if: matrix.python == '3.12'
+        with:
+          files: ./coverage.xml
+          flags: python
+          fail_ci_if_error: false
 
   # ============================================================
   # C++ Core: Build & Test
@@ -145,25 +153,44 @@ jobs:
         working-directory: adaptive_router_core
         shell: bash
         run: |
-          PRESET_NAME="${{ matrix.build_type == 'Debug' && 'debug' || 'release' }}"
+          # Conan generates different preset names on Windows vs Linux/macOS
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            # Windows uses conan-default regardless of build type
+            PRESET_NAME="default"
+          else
+            # Linux/macOS uses conan-release or conan-debug
+            PRESET_NAME="${{ matrix.build_type == 'Debug' && 'debug' || 'release' }}"
+          fi
           NANOBIND_DIR=$(cd .. && uv run python -c "import nanobind; print(nanobind.cmake_dir())")
           cmake --preset conan-${PRESET_NAME} -DBUILD_TESTING=ON -Dnanobind_DIR="${NANOBIND_DIR}"
 
       - name: Build
         working-directory: adaptive_router_core
         shell: bash
-        run: cmake --build build/build/${{ matrix.build_type }} --parallel
+        run: |
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            # Windows builds to build/ with --config flag
+            cmake --build build --config ${{ matrix.build_type }} --parallel
+          else
+            # Linux/macOS builds to build/build/Release or build/build/Debug
+            cmake --build build/build/${{ matrix.build_type }} --parallel
+          fi
 
       - name: Test C++
         working-directory: adaptive_router_core
         shell: bash
-        run: ctest --test-dir build/build/${{ matrix.build_type }} --output-on-failure
+        run: |
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            ctest --test-dir build -C ${{ matrix.build_type }} --output-on-failure
+          else
+            ctest --test-dir build/build/${{ matrix.build_type }} --output-on-failure
+          fi
 
       - name: Test Python bindings
         shell: bash
         run: |
           if [ "${{ runner.os }}" = "Windows" ]; then
-            MODULE_PATH="${{ github.workspace }}/adaptive_router_core/build/build/${{ matrix.build_type }}/bindings/python/${{ matrix.build_type }}"
+            MODULE_PATH="${{ github.workspace }}/adaptive_router_core/build/bindings/python/${{ matrix.build_type }}"
           else
             MODULE_PATH="${{ github.workspace }}/adaptive_router_core/build/build/${{ matrix.build_type }}/bindings/python"
           fi
@@ -174,67 +201,51 @@ jobs:
         with:
           name: adaptive-core-${{ matrix.os }}-${{ matrix.arch }}-${{ matrix.build_type }}-py${{ matrix.python }}
           path: |
-            adaptive_router_core/build/build/${{ matrix.build_type }}/*adaptive_core.*
-            adaptive_router_core/build/build/${{ matrix.build_type }}/*adaptive_c*
-            adaptive_router_core/build/build/${{ matrix.build_type }}/bindings/python/*adaptive_core_ext*
+            adaptive_router_core/build/${{ runner.os == 'Windows' && '' || 'build/' }}${{ matrix.build_type }}/*adaptive_core.*
+            adaptive_router_core/build/${{ runner.os == 'Windows' && '' || 'build/' }}${{ matrix.build_type }}/*adaptive_c*
+            adaptive_router_core/build/${{ runner.os == 'Windows' && '' || 'build/' }}${{ matrix.build_type }}/bindings/python/*adaptive_core_ext*
           retention-days: 7
 
   # ============================================================
-  # Deploy: Modal (Production)
+  # Deploy: Modal
   # ============================================================
-  deploy-production:
-    name: Deploy to Modal (Production)
+  deploy:
+    name: Deploy to Modal (${{ matrix.environment }})
     runs-on: ubuntu-latest
     needs: [lint, test-python, build-cpp]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+    strategy:
+      matrix:
+        include:
+          - environment: production
+            branch: refs/heads/main
+            modal_env: main
+          - environment: development
+            branch: refs/heads/dev
+            modal_env: dev
     steps:
-      - uses: actions/checkout@v6
+      - if: github.ref == matrix.branch
+        uses: actions/checkout@v6
 
-      - name: Setup uv
+      - if: github.ref == matrix.branch
+        name: Setup uv
         uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
 
-      - name: Setup Python
+      - if: github.ref == matrix.branch
+        name: Setup Python
         run: uv python install 3.12
 
-      - name: Sync workspace
+      - if: github.ref == matrix.branch
+        name: Sync workspace
         run: uv sync
 
-      - name: Deploy to Modal
+      - if: github.ref == matrix.branch
+        name: Deploy to Modal
         working-directory: adaptive_router_app
         run: uv run modal deploy main.py
         env:
           MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
           MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
-          MODAL_ENVIRONMENT: main
-
-  # ============================================================
-  # Deploy: Modal (Development)
-  # ============================================================
-  deploy-development:
-    name: Deploy to Modal (Development)
-    runs-on: ubuntu-latest
-    needs: [lint, test-python, build-cpp]
-    if: github.ref == 'refs/heads/dev' && github.event_name == 'push'
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Setup uv
-        uses: astral-sh/setup-uv@v5
-        with:
-          enable-cache: true
-
-      - name: Setup Python
-        run: uv python install 3.12
-
-      - name: Sync workspace
-        run: uv sync
-
-      - name: Deploy to Modal
-        working-directory: adaptive_router_app
-        run: uv run modal deploy main.py
-        env:
-          MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
-          MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
-          MODAL_ENVIRONMENT: dev
+          MODAL_ENVIRONMENT: ${{ matrix.modal_env }}

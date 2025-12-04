@@ -1,9 +1,9 @@
 [build-system]
-requires = ["scikit-build-core>=0.10.7", "nanobind>=2.2.0"]
+requires = ["scikit-build-core>=0.10.7", "nanobind>=2.9.2"]
 build-backend = "scikit_build_core.build"
 
 [project]
-name = "adaptive_router_core"
+name = "adaptive-router-core"
 version = "0.1.0"
 description = "C++ inference core for Adaptive Router"
 authors = [{ name = "Botir Khaltaev", email = "botirkhaltaev@llmadaptive.uk" }]

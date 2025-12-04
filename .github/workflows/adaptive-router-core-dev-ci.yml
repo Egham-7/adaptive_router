@@ -60,7 +60,11 @@ jobs:
     - uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python }}
-        cache: 'pip'
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
+      with:
+        enable-cache: true
 
     - name: Cache Conan packages
       uses: actions/cache@v4
@@ -72,7 +76,7 @@ jobs:
           conan-${{ runner.os }}-
 
     - name: Install Conan
-      run: pip install conan==2.12.0
+      run: uv tool install conan==2.12.0
 
     - name: Configure Conan
       run: conan profile detect --force
@@ -91,11 +95,16 @@ jobs:
           -s build_type=${{ matrix.build_type }} \
           -s compiler.cppstd=23
 
+    - name: Sync uv workspace
+      working-directory: .
+      run: uv sync
+
     - name: Configure CMake
       shell: bash
       run: |
         PRESET_NAME="${{ matrix.build_type == 'Debug' && 'debug' || 'release' }}"
-        cmake --preset conan-${PRESET_NAME} -DBUILD_TESTING=ON
+        NANOBIND_DIR=$(cd .. && uv run python -c "import nanobind; print(nanobind.cmake_dir())")
+        cmake --preset conan-${PRESET_NAME} -DBUILD_TESTING=ON -Dnanobind_DIR="${NANOBIND_DIR}"
 
     - name: Build
       shell: bash
@@ -113,7 +122,7 @@ jobs:
         else
           PYTHONPATH="build/build/${{ matrix.build_type }}/bindings/python"
         fi
-        python -c "import sys; sys.path.insert(0, '$PYTHONPATH'); import adaptive_core_ext; print(f'Module version: {adaptive_core_ext.__version__}')"
+        cd .. && uv run python -c "import sys; sys.path.insert(0, 'adaptive_router_core/$PYTHONPATH'); import adaptive_core_ext; print(f'Module version: {adaptive_core_ext.__version__}')"
 
     - uses: actions/upload-artifact@v4
       with:

@@ -1,14 +1,8 @@
 find_package(Python REQUIRED COMPONENTS Interpreter Development.Module)
 
-# Fetch nanobind (latest stable)
-include(FetchContent)
-FetchContent_Declare(
-    nanobind
-    GIT_REPOSITORY https://github.com/wjakob/nanobind.git
-    GIT_TAG v2.2.0
-    GIT_SHALLOW TRUE
-)
-FetchContent_MakeAvailable(nanobind)
+# Find nanobind - provided by scikit-build-core from pyproject.toml build requirements
+# or via pip install nanobind
+find_package(nanobind CONFIG REQUIRED)
 
 # Create Python extension module
 nanobind_add_module(adaptive_core_ext

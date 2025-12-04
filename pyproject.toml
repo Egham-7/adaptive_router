@@ -18,6 +18,11 @@ members = [
     "adaptive_router_core",
 ]
 
+[dependency-groups]
+dev = [
+    "nanobind>=2.9.2",
+]
+
 [tool.uv.sources]
 # Workspace members can reference each other
 adaptive-router = { workspace = true }

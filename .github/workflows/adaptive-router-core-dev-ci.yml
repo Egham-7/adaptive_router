@@ -13,178 +13,113 @@ on:
       - '.github/workflows/adaptive-router-core-dev-ci.yml'
   workflow_dispatch:
 
-jobs:
-  build-and-test:
-    name: ${{ matrix.os }} - ${{ matrix.arch }} - ${{ matrix.build_type }}
-    runs-on: ${{ matrix.runner }}
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+jobs:
+  lint:
+    name: C++ Code Format Check
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install clang-format
+        run: sudo apt-get update && sudo apt-get install -y clang-format-18
+
+      - name: Check formatting
+        working-directory: adaptive_router_core
+        run: |
+          find include src bindings tests -name '*.hpp' -o -name '*.cpp' -o -name '*.h' | \
+          xargs clang-format-18 --dry-run --Werror
+
+  build:
+    name: ${{ matrix.os }}-${{ matrix.arch }}-${{ matrix.build_type }}-py${{ matrix.python }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
         include:
-          # Linux x86_64
-          - os: linux
-            runner: ubuntu-22.04
-            arch: x86_64
-            build_type: Release
-            conan_arch: x86_64
-
-          - os: linux
-            runner: ubuntu-22.04
-            arch: x86_64
-            build_type: Debug
-            conan_arch: x86_64
-
-          # Linux ARM64
-          - os: linux
-            runner: ubuntu-22.04
-            arch: aarch64
-            build_type: Release
-            conan_arch: armv8
-
-          # macOS x86_64 (Intel)
-          - os: macos
-            runner: macos-13
-            arch: x86_64
-            build_type: Release
-            conan_arch: x86_64
-
-          # macOS ARM64 (Apple Silicon)
-          - os: macos
-            runner: macos-14
-            arch: arm64
-            build_type: Release
-            conan_arch: armv8
-
-          # Windows x86_64
-          - os: windows
-            runner: windows-2022
-            arch: x86_64
-            build_type: Release
-            conan_arch: x86_64
-
-          - os: windows
-            runner: windows-2022
-            arch: x86_64
-            build_type: Debug
-            conan_arch: x86_64
+          - { os: linux, runner: ubuntu-24.04, arch: x86_64, build_type: Release, python: '3.11' }
+          - { os: linux, runner: ubuntu-24.04, arch: x86_64, build_type: Release, python: '3.12' }
+          - { os: linux, runner: ubuntu-24.04, arch: x86_64, build_type: Release, python: '3.13' }
+          - { os: linux, runner: ubuntu-24.04, arch: x86_64, build_type: Debug, python: '3.11' }
+          - { os: macos, runner: macos-13, arch: x86_64, build_type: Release, python: '3.11' }
+          - { os: macos, runner: macos-15, arch: armv8, build_type: Release, python: '3.12' }
+          - { os: windows, runner: windows-2025, arch: x86_64, build_type: Release, python: '3.11' }
+          - { os: windows, runner: windows-2025, arch: x86_64, build_type: Debug, python: '3.11' }
 
     defaults:
       run:
         working-directory: adaptive_router_core
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+    - uses: actions/checkout@v6
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
+    - uses: actions/setup-python@v5
       with:
-        python-version: '3.11'
+        python-version: ${{ matrix.python }}
+        cache: 'pip'
+
+    - name: Cache Conan packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.conan2
+        key: conan-${{ runner.os }}-${{ matrix.arch }}-${{ hashFiles('adaptive_router_core/conanfile.py') }}
+        restore-keys: |
+          conan-${{ runner.os }}-${{ matrix.arch }}-
+          conan-${{ runner.os }}-
 
     - name: Install Conan
+      run: pip install conan==2.12.0
+
+    - name: Configure Conan
+      run: conan profile detect --force
+
+    - name: Verify Compiler (Linux)
+      if: runner.os == 'Linux'
       run: |
-        pip install conan>=2.0
-        conan --version
+        gcc --version
+        g++ --version
+        echo "Verifying C++23 support..."
+        echo '#include <version>' | gcc -x c++ -std=c++23 -E - > /dev/null && echo "C++23 supported" || echo "C++23 NOT supported"
 
-    - name: Create Conan profile
-      shell: bash
-      run: |
-        conan profile detect --force
-        conan profile show default
-
-        # Update profile with C++23 and architecture
-        conan profile update "compiler.cppstd=23" default
-        conan profile update "settings.arch=${{ matrix.conan_arch }}" default
-        conan profile update "settings.build_type=${{ matrix.build_type }}" default
-
-        # Windows-specific settings
-        if [ "${{ runner.os }}" = "Windows" ]; then
-          conan profile update "compiler.runtime=dynamic" default
-        fi
-
-        conan profile show default
-
-    - name: Set up QEMU (for ARM64 on Linux)
-      if: matrix.os == 'linux' && matrix.arch == 'aarch64'
-      uses: docker/setup-qemu-action@v3
-      with:
-        platforms: arm64
-
-    - name: Install dependencies with Conan
-      shell: bash
+    - name: Install dependencies
       run: |
         conan install . --output-folder=build --build=missing \
           -s build_type=${{ matrix.build_type }} \
-          -s arch=${{ matrix.conan_arch }}
+          -s compiler.cppstd=23
 
     - name: Configure CMake
       shell: bash
       run: |
-        if [ "${{ runner.os }}" = "Windows" ]; then
-          cmake --preset conan-default -DBUILD_TESTING=ON
-        else
-          cmake --preset conan-release -DBUILD_TESTING=ON
-        fi
+        PRESET_NAME="${{ matrix.build_type == 'Debug' && 'debug' || 'release' }}"
+        cmake --preset conan-${PRESET_NAME} -DBUILD_TESTING=ON
 
     - name: Build
       shell: bash
-      run: |
-        if [ "${{ runner.os }}" = "Windows" ]; then
-          cmake --build build/build/Release --config ${{ matrix.build_type }} --parallel 4
-        else
-          cmake --build build/build/Release --parallel 4
-        fi
+      run: cmake --build build/build/${{ matrix.build_type }} --parallel --verbose
 
-    - name: Run C++ tests
+    - name: Test
       shell: bash
-      working-directory: adaptive_router_core/build/build/Release
-      run: |
-        if [ "${{ runner.os }}" = "Windows" ]; then
-          ctest --output-on-failure -C ${{ matrix.build_type }}
-        else
-          ctest --output-on-failure
-        fi
+      run: ctest --test-dir build/build/${{ matrix.build_type }} --output-on-failure
 
-    - name: Test Python bindings (non-ARM Linux)
-      if: matrix.arch != 'aarch64'
+    - name: Test Python bindings
       shell: bash
       run: |
         if [ "${{ runner.os }}" = "Windows" ]; then
-          export PYTHONPATH="build/build/Release/bindings/python/${{ matrix.build_type }}"
+          PYTHONPATH="build/build/${{ matrix.build_type }}/bindings/python/${{ matrix.build_type }}"
         else
-          export PYTHONPATH="build/build/Release/bindings/python"
+          PYTHONPATH="build/build/${{ matrix.build_type }}/bindings/python"
         fi
+        python -c "import sys; sys.path.insert(0, '$PYTHONPATH'); import adaptive_core_ext; print(f'Module version: {adaptive_core_ext.__version__}')"
 
-        python3 -c "
-        import adaptive_core_ext as adaptive
-        print(f'Module imported: version {adaptive.__version__}')
-        print(f'Router class: {adaptive.Router}')
-        print(f'Methods: {[m for m in dir(adaptive.Router) if not m.startswith(\"_\")]}')
-        "
-
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v4
       with:
-        name: adaptive-router-core-dev-${{ matrix.os }}-${{ matrix.arch }}-${{ matrix.build_type }}
+        name: adaptive-core-dev-${{ matrix.os }}-${{ matrix.arch }}-${{ matrix.build_type }}-py${{ matrix.python }}
         path: |
-          adaptive_router_core/build/build/Release/libadaptive_core.*
-          adaptive_router_core/build/build/Release/libadaptive_c.*
-          adaptive_router_core/build/build/Release/adaptive_c.*
-          adaptive_router_core/build/build/Release/bindings/python/adaptive_core_ext.*
+          adaptive_router_core/build/build/${{ matrix.build_type }}/*adaptive_core*
+          adaptive_router_core/build/build/${{ matrix.build_type }}/*adaptive_c*
+          adaptive_router_core/build/build/${{ matrix.build_type }}/bindings/python/*adaptive_core_ext*
         retention-days: 3
-
-  build-summary:
-    name: Build Summary
-    runs-on: ubuntu-latest
-    needs: build-and-test
-    if: always()
-    steps:
-      - name: Check build results
-        run: |
-          echo "Adaptive Router Core Dev CI completed"
-          if [ "${{ needs.build-and-test.result }}" != "success" ]; then
-            echo "Some builds failed"
-            exit 1
-          fi
-          echo "All builds passed"

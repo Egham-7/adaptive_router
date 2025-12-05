@@ -1,16 +1,23 @@
 #pragma once
+#include <memory>
 #include <utility>
 
+#include "cluster_backend.hpp"
 #include "types.hpp"
 
 class ClusterEngine {
 public:
-  ClusterEngine() = default;
+  // Default constructor (auto-detect GPU)
+  ClusterEngine();
+
+  // Explicit backend selection
+  explicit ClusterEngine(adaptive::ClusterBackendType backend_type);
+
   ~ClusterEngine() = default;
 
   // Movable
-  ClusterEngine(ClusterEngine&&) = default;
-  ClusterEngine& operator=(ClusterEngine&&) = default;
+  ClusterEngine(ClusterEngine&&) noexcept = default;
+  ClusterEngine& operator=(ClusterEngine&&) noexcept = default;
   ClusterEngine(const ClusterEngine&) = delete;
   ClusterEngine& operator=(const ClusterEngine&) = delete;
 
@@ -24,7 +31,10 @@ public:
   // Get number of clusters
   [[nodiscard]] int get_n_clusters() const noexcept;
 
+  // Check if using GPU acceleration
+  [[nodiscard]] bool is_gpu_accelerated() const noexcept;
+
 private:
-  EmbeddingMatrix centroids_;
-  int n_clusters_ = 0;
+  std::unique_ptr<adaptive::IClusterBackend> backend_;
+  int dim_ = 0;
 };

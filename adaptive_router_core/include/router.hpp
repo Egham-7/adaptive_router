@@ -1,4 +1,5 @@
 #pragma once
+#include <expected>
 #include <span>
 #include <string>
 #include <vector>
@@ -24,10 +25,10 @@ struct RouteResponse {
 
 class Router {
 public:
-  // Factory methods
-  [[nodiscard]] static Router from_file(const std::string& profile_path);
-  [[nodiscard]] static Router from_json_string(const std::string& json_str);
-  [[nodiscard]] static Router from_binary(const std::string& path);
+  // Factory methods - return expected for error handling without exceptions
+  [[nodiscard]] static std::expected<Router, std::string> from_file(const std::string& profile_path) noexcept;
+  [[nodiscard]] static std::expected<Router, std::string> from_json_string(const std::string& json_str) noexcept;
+  [[nodiscard]] static std::expected<Router, std::string> from_binary(const std::string& path) noexcept;
 
   // Default constructors/destructor
   Router() = default;

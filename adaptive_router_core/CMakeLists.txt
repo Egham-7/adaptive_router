@@ -1,5 +1,13 @@
 cmake_minimum_required(VERSION 3.24)
-project(adaptive_router_core VERSION 0.1.0 LANGUAGES CXX)
+
+# Optional CUDA support - must be set before project()
+option(ENABLE_CUDA "Enable CUDA GPU acceleration for cluster assignment" OFF)
+
+if(ENABLE_CUDA)
+  project(adaptive_router_core VERSION 0.1.0 LANGUAGES CXX CUDA)
+else()
+  project(adaptive_router_core VERSION 0.1.0 LANGUAGES CXX)
+endif()
 
 # C++ standard - use C++23 for broader compiler support
 # C++26 features used are minimal and available in C++23
@@ -42,6 +50,7 @@ find_package(msgpack-cxx REQUIRED)
 add_library(adaptive_core STATIC
     src/router.cpp
     src/cluster.cpp
+    src/cluster_backend.cpp
     src/scorer.cpp
     src/profile.cpp
 )
@@ -83,6 +92,42 @@ if(ENABLE_SANITIZERS)
       -fsanitize=address,undefined
     )
   endif()
+endif()
+
+# CUDA GPU acceleration (optional)
+if(ENABLE_CUDA)
+  message(STATUS "CUDA GPU acceleration enabled")
+
+  # Find CUDA toolkit
+  find_package(CUDAToolkit REQUIRED)
+
+  # CUDA library for GPU cluster assignment
+  add_library(adaptive_core_cuda STATIC
+    src/cuda/cluster_cuda.cu
+  )
+
+  target_include_directories(adaptive_core_cuda PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  )
+
+  target_link_libraries(adaptive_core_cuda PRIVATE
+    CUDA::cublas
+    CUDA::cudart
+    Eigen3::Eigen
+  )
+
+  # Set CUDA standard to C++17 (CUDA doesn't support C++23 yet)
+  set_target_properties(adaptive_core_cuda PROPERTIES
+    CUDA_STANDARD 17
+    CUDA_STANDARD_REQUIRED ON
+    CUDA_SEPARABLE_COMPILATION ON
+  )
+
+  # Link CUDA library to core
+  target_link_libraries(adaptive_core PRIVATE adaptive_core_cuda)
+  target_compile_definitions(adaptive_core PUBLIC ADAPTIVE_HAS_CUDA=1)
+else()
+  message(STATUS "CUDA GPU acceleration disabled (use -DENABLE_CUDA=ON to enable)")
 endif()
 
 # Python bindings

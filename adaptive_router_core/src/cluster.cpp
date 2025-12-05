@@ -1,35 +1,25 @@
 #include "cluster.hpp"
 
+ClusterEngine::ClusterEngine()
+    : backend_(adaptive::create_cluster_backend(adaptive::ClusterBackendType::Auto)) {}
+
+ClusterEngine::ClusterEngine(adaptive::ClusterBackendType backend_type)
+    : backend_(adaptive::create_cluster_backend(backend_type)) {}
+
 void ClusterEngine::load_centroids(const EmbeddingMatrix& centers) {
-  centroids_ = centers;
-  n_clusters_ = static_cast<int>(centers.rows());
+  dim_ = static_cast<int>(centers.cols());
+  int n_clusters = static_cast<int>(centers.rows());
+
+  // Eigen stores in column-major by default, backend expects row-major
+  // Use eval() to ensure contiguous row-major data
+  Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> row_major = centers;
+  backend_->load_centroids(row_major.data(), n_clusters, dim_);
 }
 
 std::pair<int, float> ClusterEngine::assign(const EmbeddingVector& embedding) {
-  if (n_clusters_ == 0) {
-    return {-1, 0.0f};
-  }
-
-  // Validate embedding dimension matches centroid dimension
-  int expected_dim = static_cast<int>(centroids_.cols());
-  if (embedding.size() != expected_dim) {
-    // Dimension mismatch: return error sentinel
-    return {-1, 0.0f};
-  }
-
-  // Compute squared Euclidean distances to all centroids
-  int best_cluster = 0;
-  float best_distance = std::numeric_limits<float>::max();
-
-  for (int i = 0; i < n_clusters_; ++i) {
-    float dist = (centroids_.row(i).transpose() - embedding).squaredNorm();
-    if (dist < best_distance) {
-      best_distance = dist;
-      best_cluster = i;
-    }
-  }
-
-  return {best_cluster, std::sqrt(best_distance)};
+  return backend_->assign(embedding.data(), static_cast<int>(embedding.size()));
 }
 
-int ClusterEngine::get_n_clusters() const noexcept { return n_clusters_; }
+int ClusterEngine::get_n_clusters() const noexcept { return backend_->get_n_clusters(); }
+
+bool ClusterEngine::is_gpu_accelerated() const noexcept { return backend_->is_gpu_accelerated(); }

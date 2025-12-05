@@ -22,12 +22,11 @@ AdaptiveRouter* adaptive_router_create(const char* profile_path) {
     return nullptr;
   }
 
-  try {
-    auto* router = new Router(Router::from_file(profile_path));
-    return reinterpret_cast<AdaptiveRouter*>(router);
-  } catch (const std::exception&) {
+  auto result = Router::from_file(profile_path);
+  if (!result) {
     return nullptr;
   }
+  return reinterpret_cast<AdaptiveRouter*>(new Router(std::move(*result)));
 }
 
 AdaptiveRouter* adaptive_router_create_from_json(const char* json_str) {
@@ -35,12 +34,11 @@ AdaptiveRouter* adaptive_router_create_from_json(const char* json_str) {
     return nullptr;
   }
 
-  try {
-    auto* router = new Router(Router::from_json_string(json_str));
-    return reinterpret_cast<AdaptiveRouter*>(router);
-  } catch (const std::exception&) {
+  auto result = Router::from_json_string(json_str);
+  if (!result) {
     return nullptr;
   }
+  return reinterpret_cast<AdaptiveRouter*>(new Router(std::move(*result)));
 }
 
 AdaptiveRouter* adaptive_router_create_from_binary(const char* path) {
@@ -48,12 +46,11 @@ AdaptiveRouter* adaptive_router_create_from_binary(const char* path) {
     return nullptr;
   }
 
-  try {
-    auto* router = new Router(Router::from_binary(path));
-    return reinterpret_cast<AdaptiveRouter*>(router);
-  } catch (const std::exception&) {
+  auto result = Router::from_binary(path);
+  if (!result) {
     return nullptr;
   }
+  return reinterpret_cast<AdaptiveRouter*>(new Router(std::move(*result)));
 }
 
 void adaptive_router_destroy(AdaptiveRouter* router) {

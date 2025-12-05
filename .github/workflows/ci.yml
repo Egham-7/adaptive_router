@@ -138,9 +138,11 @@ jobs:
             -s build_type=${{ matrix.build_type }} \
             -s compiler.cppstd=23
 
-      # ---- UV: Sync Python packages (for nanobind) ----
-      - name: Sync workspace
-        run: uv sync
+       # ---- UV: Sync Python packages (for nanobind) ----
+       - name: Sync workspace
+         env:
+           CMAKE_TOOLCHAIN_FILE: ${{ github.workspace }}/adaptive_router_core/build/build/${{ matrix.build_type }}/generators/conan_toolchain.cmake
+         run: uv sync
 
       # ---- CMake: Configure & Build ----
       - name: Configure CMake

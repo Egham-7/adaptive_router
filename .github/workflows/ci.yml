@@ -3,8 +3,14 @@ name: Adaptive Router CI
 on:
   push:
     branches: [main, dev]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
   pull_request:
     branches: [main, dev]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
   workflow_dispatch:
 
 concurrency:
@@ -13,25 +19,52 @@ concurrency:
 
 jobs:
   # ============================================================
-  # Python Packages: Lint, Type Check & Test
+  # Lint & Type Check (Python only, runs once)
+  # ============================================================
+  lint:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Setup Python
+        run: uv python install 3.12
+
+      - name: Sync Python packages (skip C++ core)
+        run: uv sync --no-install-package adaptive-router-core
+
+      - name: Ruff check
+        run: uv run ruff check --output-format=github
+
+      - name: Ruff format check
+        run: uv run ruff format --check
+
+      - name: Type check library
+        working-directory: adaptive_router
+        run: uv run mypy .
+
+      - name: Type check app
+        working-directory: adaptive_router_app
+        run: uv run mypy .
+
+  # ============================================================
+  # Test Python Packages
   # (adaptive_router + adaptive_router_app - no C++ deps)
   # ============================================================
-  python:
-    name: Python ${{ matrix.python }} - ${{ matrix.task }}
+  test-python:
+    name: Test Python ${{ matrix.python }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         python: ["3.11", "3.12", "3.13"]
-        task: [lint, test]
-        exclude:
-          # Only run lint once on Python 3.12
-          - python: "3.11"
-            task: lint
-          - python: "3.13"
-            task: lint
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
       - name: Setup uv
         uses: astral-sh/setup-uv@v5
@@ -44,36 +77,14 @@ jobs:
       - name: Sync Python packages (skip C++ core)
         run: uv sync --no-install-package adaptive-router-core
 
-      # Lint tasks (only on Python 3.12)
-      - name: Ruff check
-        if: matrix.task == 'lint'
-        run: uv run ruff check --output-format=github
-
-      - name: Ruff format check
-        if: matrix.task == 'lint'
-        run: uv run ruff format --check
-
-      - name: Type check library
-        if: matrix.task == 'lint'
-        working-directory: adaptive_router
-        run: uv run mypy .
-
-      - name: Type check app
-        if: matrix.task == 'lint'
-        working-directory: adaptive_router_app
-        run: uv run mypy .
-
-      # Test tasks (all Python versions)
       - name: Test library
-        if: matrix.task == 'test'
         run: uv run --package adaptive-router pytest -v --tb=short --cov=adaptive_router --cov-report=xml
 
       - name: Test app
-        if: matrix.task == 'test'
         run: uv run --package adaptive-router-app pytest -v --tb=short --cov=adaptive_router_app --cov-report=xml --cov-append
 
       - name: Upload coverage
-        if: matrix.task == 'test' && matrix.python == '3.12'
+        if: matrix.python == '3.12'
         uses: codecov/codecov-action@v4
         with:
           files: ./coverage.xml
@@ -133,7 +144,7 @@ jobs:
             }
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
         with:
@@ -143,6 +154,16 @@ jobs:
         uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
+
+      # ---- Conan Cache ----
+      - name: Cache Conan packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.conan2
+          key: conan-${{ runner.os }}-${{ matrix.build_type }}-${{ hashFiles('adaptive_router_core/conanfile.py') }}
+          restore-keys: |
+            conan-${{ runner.os }}-${{ matrix.build_type }}-
+            conan-${{ runner.os }}-
 
       # ---- UV: Sync Python packages (build backend handles Conan) ----
       - name: Sync workspace
@@ -199,7 +220,7 @@ jobs:
   deploy:
     name: Deploy to Modal (${{ matrix.environment }})
     runs-on: ubuntu-latest
-    needs: [python, cpp]
+    needs: [lint, test-python]
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
     strategy:
       matrix:
@@ -212,7 +233,7 @@ jobs:
             modal_env: dev
     steps:
       - if: github.ref == matrix.branch
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - if: github.ref == matrix.branch
         name: Setup uv

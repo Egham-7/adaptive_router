@@ -94,6 +94,7 @@ ignore_missing_imports = true
 [tool.pytest.ini_options]
 addopts = "-v --strict-markers"
 pythonpath = ["."]
+testpaths = ["tests"]
 
 [tool.coverage.report]
 exclude_lines = [

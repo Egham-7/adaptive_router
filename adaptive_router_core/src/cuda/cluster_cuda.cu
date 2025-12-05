@@ -86,6 +86,10 @@ void CudaClusterBackendT<float>::free_device_memory() {
 
 template<>
 void CudaClusterBackendT<float>::load_centroids(const float* data, int n_clusters, int dim) {
+  if (n_clusters <= 0 || dim <= 0) {
+    throw std::invalid_argument("n_clusters and dim must be positive");
+  }
+
   free_device_memory();
 
   n_clusters_ = n_clusters;
@@ -169,7 +173,7 @@ std::pair<int, float> CudaClusterBackendT<float>::assign(const float* embedding,
    // 6. Synchronize to ensure Thrust completes before reading result
    CUDA_CHECK(cudaStreamSynchronize(stream_));
   int best = static_cast<int>(min_it - ptr);
-  float best_dist = std::sqrt(*min_it);
+  float best_dist = std::sqrt(std::max(*min_it, 0.0f));
 
   return {best, best_dist};
 }
@@ -219,6 +223,10 @@ void CudaClusterBackendT<double>::free_device_memory() {
 
 template<>
 void CudaClusterBackendT<double>::load_centroids(const double* data, int n_clusters, int dim) {
+  if (n_clusters <= 0 || dim <= 0) {
+    throw std::invalid_argument("n_clusters and dim must be positive");
+  }
+
   free_device_memory();
 
   n_clusters_ = n_clusters;
@@ -300,7 +308,7 @@ std::pair<int, double> CudaClusterBackendT<double>::assign(const double* embeddi
    // 6. Synchronize to ensure Thrust completes before reading result
    CUDA_CHECK(cudaStreamSynchronize(stream_));
   int best = static_cast<int>(min_it - ptr);
-  double best_dist = std::sqrt(*min_it);
+  double best_dist = std::sqrt(std::max(*min_it, 0.0));
 
   return {best, best_dist};
 }

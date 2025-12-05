@@ -99,7 +99,13 @@ RouteResponse Router::route(const Scalar* embedding_data, size_t embedding_size,
   EmbeddingVectorT<Scalar> embedding = Eigen::Map<const EmbeddingVectorT<Scalar>>(
       embedding_data, embedding_size);
 
-  auto [cluster_id, distance] = engine.assign(embedding);
+   auto [cluster_id, distance] = engine.assign(embedding);
+
+   // Validate cluster assignment
+   if (cluster_id < 0) {
+     throw std::runtime_error(
+         "No valid cluster found for embedding; check router profile configuration");
+   }
 
    // Score models for this cluster
    auto scores = scorer_.score_models(cluster_id, cost_bias, models);

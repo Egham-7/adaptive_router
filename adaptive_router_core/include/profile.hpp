@@ -3,8 +3,8 @@
 #include <string>
 #include <vector>
 
+#include "cluster.hpp"
 #include "scorer.hpp"
-#include "types.hpp"
 
 struct ClusteringConfig {
   int max_iter = 300;
@@ -30,7 +30,7 @@ struct ProfileMetadata {
 };
 
 struct RouterProfile {
-  EmbeddingMatrix cluster_centers;  // K x D matrix
+  EmbeddingMatrixT<float> cluster_centers;  // K x D matrix (stored as float32)
   std::vector<ModelFeatures> models;
   ProfileMetadata metadata;
 

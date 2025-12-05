@@ -2,28 +2,31 @@
 
 #ifdef ADAPTIVE_HAS_CUDA
 
+#include <cublas_v2.h>
 #include <cuda_runtime.h>
+
 #include <utility>
+#include <vector>
 
 #include "cluster_backend.hpp"
 
-namespace adaptive {
-
-// CUDA backend for GPU-accelerated cluster assignment
-class CudaClusterBackend : public IClusterBackend {
+// Templated CUDA backend using cuBLAS for GPU-accelerated cluster assignment
+// Uses L2 distance trick: ||a-b||² = ||a||² + ||b||² - 2(a·b)
+template<typename Scalar>
+class CudaClusterBackendT : public IClusterBackendT<Scalar> {
 public:
-  CudaClusterBackend();
-  ~CudaClusterBackend() override;
+  CudaClusterBackendT();
+  ~CudaClusterBackendT() override;
 
   // Non-copyable, non-movable
-  CudaClusterBackend(const CudaClusterBackend&) = delete;
-  CudaClusterBackend& operator=(const CudaClusterBackend&) = delete;
-  CudaClusterBackend(CudaClusterBackend&&) = delete;
-  CudaClusterBackend& operator=(CudaClusterBackend&&) = delete;
+  CudaClusterBackendT(const CudaClusterBackendT&) = delete;
+  CudaClusterBackendT& operator=(const CudaClusterBackendT&) = delete;
+  CudaClusterBackendT(CudaClusterBackendT&&) = delete;
+  CudaClusterBackendT& operator=(CudaClusterBackendT&&) = delete;
 
-  void load_centroids(const float* data, int n_clusters, int dim) override;
+  void load_centroids(const Scalar* data, int n_clusters, int dim) override;
 
-  [[nodiscard]] std::pair<int, float> assign(const float* embedding, int dim) override;
+  [[nodiscard]] std::pair<int, Scalar> assign(const Scalar* embedding, int dim) override;
 
   [[nodiscard]] int get_n_clusters() const noexcept override { return n_clusters_; }
 
@@ -32,10 +35,15 @@ public:
   [[nodiscard]] bool is_gpu_accelerated() const noexcept override { return true; }
 
 private:
+  // cuBLAS handle
+  cublasHandle_t cublas_handle_ = nullptr;
+
   // Device memory pointers
-  float* d_centroids_ = nullptr;   // [n_clusters x dim]
-  float* d_embedding_ = nullptr;   // [dim]
-  float* d_distances_ = nullptr;   // [n_clusters]
+  Scalar* d_centroids_ = nullptr;       // [dim x n_clusters] column-major for cuBLAS
+  Scalar* d_centroid_norms_ = nullptr;  // [n_clusters] precomputed ||c_i||²
+  Scalar* d_embedding_ = nullptr;       // [dim]
+  Scalar* d_dots_ = nullptr;            // [n_clusters] workspace for dot products
+  Scalar* d_distances_ = nullptr;       // [n_clusters] final distances
 
   int n_clusters_ = 0;
   int dim_ = 0;
@@ -45,7 +53,5 @@ private:
 
   void free_device_memory();
 };
-
-}  // namespace adaptive
 
 #endif  // ADAPTIVE_HAS_CUDA

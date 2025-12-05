@@ -1,40 +1,54 @@
 #pragma once
+#include <Eigen/Dense>
 #include <memory>
 #include <utility>
 
 #include "cluster_backend.hpp"
-#include "types.hpp"
 
-class ClusterEngine {
+// Templated types for multi-precision support
+template<typename Scalar>
+using EmbeddingVectorT = Eigen::Matrix<Scalar, Eigen::Dynamic, 1>;
+
+template<typename Scalar>
+using EmbeddingMatrixT = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
+
+template<typename Scalar = float>
+class ClusterEngineT {
 public:
-  // Default constructor (auto-detect GPU)
-  ClusterEngine();
+  ClusterEngineT()
+      : backend_(create_cluster_backend<Scalar>(ClusterBackendType::Auto)) {}
 
-  // Explicit backend selection
-  explicit ClusterEngine(adaptive::ClusterBackendType backend_type);
+  explicit ClusterEngineT(ClusterBackendType backend_type)
+      : backend_(create_cluster_backend<Scalar>(backend_type)) {}
 
-  ~ClusterEngine() = default;
+  ~ClusterEngineT() = default;
 
-  // Movable
-  ClusterEngine(ClusterEngine&&) noexcept = default;
-  ClusterEngine& operator=(ClusterEngine&&) noexcept = default;
-  ClusterEngine(const ClusterEngine&) = delete;
-  ClusterEngine& operator=(const ClusterEngine&) = delete;
+  ClusterEngineT(ClusterEngineT&&) noexcept = default;
+  ClusterEngineT& operator=(ClusterEngineT&&) noexcept = default;
+  ClusterEngineT(const ClusterEngineT&) = delete;
+  ClusterEngineT& operator=(const ClusterEngineT&) = delete;
 
-  // Load K-means cluster centers (K x D matrix)
-  void load_centroids(const EmbeddingMatrix& centers);
+  void load_centroids(const EmbeddingMatrixT<Scalar>& centers) {
+    dim_ = static_cast<int>(centers.cols());
+    int n_clusters = static_cast<int>(centers.rows());
 
-  // Assign embedding to nearest cluster
-  // Returns (cluster_id, distance) pair
-  [[nodiscard]] std::pair<int, float> assign(const EmbeddingVector& embedding);
+    Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> row_major = centers;
+    backend_->load_centroids(row_major.data(), n_clusters, dim_);
+  }
 
-  // Get number of clusters
-  [[nodiscard]] int get_n_clusters() const noexcept;
+  [[nodiscard]] std::pair<int, Scalar> assign(const EmbeddingVectorT<Scalar>& embedding) {
+    return backend_->assign(embedding.data(), static_cast<int>(embedding.size()));
+  }
 
-  // Check if using GPU acceleration
-  [[nodiscard]] bool is_gpu_accelerated() const noexcept;
+  [[nodiscard]] int get_n_clusters() const noexcept {
+    return backend_->get_n_clusters();
+  }
+
+  [[nodiscard]] bool is_gpu_accelerated() const noexcept {
+    return backend_->is_gpu_accelerated();
+  }
 
 private:
-  std::unique_ptr<adaptive::IClusterBackend> backend_;
+  std::unique_ptr<IClusterBackendT<Scalar>> backend_;
   int dim_ = 0;
 };

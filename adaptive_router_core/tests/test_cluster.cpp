@@ -2,35 +2,79 @@
 
 #include "cluster.hpp"
 
-TEST(ClusterEngineTest, EmptyEngine) {
-  ClusterEngine engine;
-  EXPECT_EQ(engine.get_n_clusters(), 0);
+// Test fixture for templated cluster engine tests
+template<typename Scalar>
+class ClusterEngineTestT : public ::testing::Test {
+protected:
+  ClusterEngineT<Scalar> engine;
+};
+
+// Test both float and double
+using ScalarTypes = ::testing::Types<float, double>;
+TYPED_TEST_SUITE(ClusterEngineTestT, ScalarTypes);
+
+TYPED_TEST(ClusterEngineTestT, EmptyEngine) {
+  EXPECT_EQ(this->engine.get_n_clusters(), 0);
 }
 
-TEST(ClusterEngineTest, LoadCentroids) {
-  ClusterEngine engine;
-
+TYPED_TEST(ClusterEngineTestT, LoadCentroids) {
   // Create simple 3 clusters with 4D embeddings
-  EmbeddingMatrix centers(3, 4);
-  centers << 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f;
+  EmbeddingMatrixT<TypeParam> centers(3, 4);
+  centers << TypeParam(1.0), TypeParam(0.0), TypeParam(0.0), TypeParam(0.0),
+             TypeParam(0.0), TypeParam(1.0), TypeParam(0.0), TypeParam(0.0),
+             TypeParam(0.0), TypeParam(0.0), TypeParam(1.0), TypeParam(0.0);
 
-  engine.load_centroids(centers);
-  EXPECT_EQ(engine.get_n_clusters(), 3);
+  this->engine.load_centroids(centers);
+  EXPECT_EQ(this->engine.get_n_clusters(), 3);
 }
 
-TEST(ClusterEngineTest, AssignToNearestCluster) {
-  ClusterEngine engine;
+TYPED_TEST(ClusterEngineTestT, AssignToNearestCluster) {
+  EmbeddingMatrixT<TypeParam> centers(3, 4);
+  centers << TypeParam(1.0), TypeParam(0.0), TypeParam(0.0), TypeParam(0.0),
+             TypeParam(0.0), TypeParam(1.0), TypeParam(0.0), TypeParam(0.0),
+             TypeParam(0.0), TypeParam(0.0), TypeParam(1.0), TypeParam(0.0);
 
-  EmbeddingMatrix centers(3, 4);
-  centers << 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f;
-
-  engine.load_centroids(centers);
+  this->engine.load_centroids(centers);
 
   // Test vector close to first centroid
-  EmbeddingVector vec(4);
-  vec << 0.9f, 0.1f, 0.0f, 0.0f;
+  EmbeddingVectorT<TypeParam> vec(4);
+  vec << TypeParam(0.9), TypeParam(0.1), TypeParam(0.0), TypeParam(0.0);
 
-  auto [cluster_id, distance] = engine.assign(vec);
+  auto [cluster_id, distance] = this->engine.assign(vec);
   EXPECT_EQ(cluster_id, 0);
-  EXPECT_GT(distance, 0.0f);
+  EXPECT_GT(distance, TypeParam(0.0));
+}
+
+TYPED_TEST(ClusterEngineTestT, AssignToSecondCluster) {
+  EmbeddingMatrixT<TypeParam> centers(3, 4);
+  centers << TypeParam(1.0), TypeParam(0.0), TypeParam(0.0), TypeParam(0.0),
+             TypeParam(0.0), TypeParam(1.0), TypeParam(0.0), TypeParam(0.0),
+             TypeParam(0.0), TypeParam(0.0), TypeParam(1.0), TypeParam(0.0);
+
+  this->engine.load_centroids(centers);
+
+  // Test vector close to second centroid
+  EmbeddingVectorT<TypeParam> vec(4);
+  vec << TypeParam(0.0), TypeParam(0.95), TypeParam(0.05), TypeParam(0.0);
+
+  auto [cluster_id, distance] = this->engine.assign(vec);
+  EXPECT_EQ(cluster_id, 1);
+  EXPECT_LT(distance, TypeParam(0.1));
+}
+
+TYPED_TEST(ClusterEngineTestT, AssignToThirdCluster) {
+  EmbeddingMatrixT<TypeParam> centers(3, 4);
+  centers << TypeParam(1.0), TypeParam(0.0), TypeParam(0.0), TypeParam(0.0),
+             TypeParam(0.0), TypeParam(1.0), TypeParam(0.0), TypeParam(0.0),
+             TypeParam(0.0), TypeParam(0.0), TypeParam(1.0), TypeParam(0.0);
+
+  this->engine.load_centroids(centers);
+
+  // Test vector close to third centroid
+  EmbeddingVectorT<TypeParam> vec(4);
+  vec << TypeParam(0.0), TypeParam(0.0), TypeParam(1.0), TypeParam(0.0);
+
+  auto [cluster_id, distance] = this->engine.assign(vec);
+  EXPECT_EQ(cluster_id, 2);
+  EXPECT_NEAR(distance, TypeParam(0.0), TypeParam(1e-6));
 }

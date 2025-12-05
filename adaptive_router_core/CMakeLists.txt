@@ -49,7 +49,6 @@ find_package(msgpack-cxx REQUIRED)
 # Core library
 add_library(adaptive_core STATIC
     src/router.cpp
-    src/cluster.cpp
     src/cluster_backend.cpp
     src/scorer.cpp
     src/profile.cpp

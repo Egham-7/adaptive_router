@@ -1,13 +1,9 @@
 #include "cluster_backend.hpp"
 
-#include "cluster_cpu.hpp"
-
 #ifdef ADAPTIVE_HAS_CUDA
 #include "cuda/cluster_cuda.hpp"
 #include <cuda_runtime.h>
 #endif
-
-namespace adaptive {
 
 bool cuda_available() noexcept {
 #ifdef ADAPTIVE_HAS_CUDA
@@ -19,29 +15,54 @@ bool cuda_available() noexcept {
 #endif
 }
 
-std::unique_ptr<IClusterBackend> create_cluster_backend(ClusterBackendType type) {
+// Float specialization
+template<>
+std::unique_ptr<IClusterBackendT<float>> create_cluster_backend(ClusterBackendType type) {
   switch (type) {
     case ClusterBackendType::CPU:
-      return std::make_unique<CpuClusterBackend>();
+      return std::make_unique<CpuClusterBackendT<float>>();
 
     case ClusterBackendType::CUDA:
 #ifdef ADAPTIVE_HAS_CUDA
       if (cuda_available()) {
-        return std::make_unique<CudaClusterBackend>();
+        return std::make_unique<CudaClusterBackendT<float>>();
       }
 #endif
-      // Fall back to CPU if CUDA requested but not available
-      return std::make_unique<CpuClusterBackend>();
+      return std::make_unique<CpuClusterBackendT<float>>();
 
     case ClusterBackendType::Auto:
     default:
 #ifdef ADAPTIVE_HAS_CUDA
       if (cuda_available()) {
-        return std::make_unique<CudaClusterBackend>();
+        return std::make_unique<CudaClusterBackendT<float>>();
       }
 #endif
-      return std::make_unique<CpuClusterBackend>();
+      return std::make_unique<CpuClusterBackendT<float>>();
   }
 }
 
-}  // namespace adaptive
+// Double specialization
+template<>
+std::unique_ptr<IClusterBackendT<double>> create_cluster_backend(ClusterBackendType type) {
+  switch (type) {
+    case ClusterBackendType::CPU:
+      return std::make_unique<CpuClusterBackendT<double>>();
+
+    case ClusterBackendType::CUDA:
+#ifdef ADAPTIVE_HAS_CUDA
+      if (cuda_available()) {
+        return std::make_unique<CudaClusterBackendT<double>>();
+      }
+#endif
+      return std::make_unique<CpuClusterBackendT<double>>();
+
+    case ClusterBackendType::Auto:
+    default:
+#ifdef ADAPTIVE_HAS_CUDA
+      if (cuda_available()) {
+        return std::make_unique<CudaClusterBackendT<double>>();
+      }
+#endif
+      return std::make_unique<CpuClusterBackendT<double>>();
+  }
+}

@@ -141,6 +141,7 @@ int main() {
 ```python
 from adaptive_core_ext import Router
 from sentence_transformers import SentenceTransformer
+import numpy as np
 
 # Load sentence transformer for embeddings
 model = SentenceTransformer('all-MiniLM-L6-v2')
@@ -150,9 +151,9 @@ router = Router.from_file("profile.json")
 
 # Compute embedding and route
 prompt = "Explain quantum computing"
-embedding = model.encode(prompt).tolist()  # Convert to Python list
+embedding = model.encode(prompt)  # Returns numpy array
 
-# Route with cost bias
+# Route with cost bias (zero-copy for float32 C-contiguous arrays)
 response = router.route(embedding, cost_bias=0.5)
 
 print(f"Selected: {response.selected_model}")
@@ -161,7 +162,7 @@ print(f"Distance: {response.cluster_distance}")
 print(f"Alternatives: {response.alternatives}")
 ```
 
-**Integration with NumPy:**
+**NumPy Integration:**
 
 ```python
 import numpy as np
@@ -169,10 +170,25 @@ from adaptive_core_ext import Router
 
 router = Router.from_file("profile.json")
 
-# Works with numpy arrays (zero-copy via nanobind)
+# Accepts any floating point numpy array (float32, float64, etc.)
+# Automatically converts to float32 C-contiguous if needed
+embedding = np.random.randn(384)  # float64 by default
+response = router.route(embedding, 0.5)
+
+# Or use float32 directly (avoids conversion overhead)
 embedding = np.random.randn(384).astype(np.float32)
 response = router.route(embedding, 0.5)
+
+# Batch routing: process multiple embeddings efficiently
+embeddings = np.random.randn(100, 384)
+responses = router.route_batch(embeddings, cost_bias=0.5)
+
+print(f"Processed {len(responses)} embeddings")
+for i, resp in enumerate(responses):
+    print(f"[{i}] Selected: {resp.selected_model}")
 ```
+
+**Performance Note:** For best performance, use float32 C-contiguous arrays to avoid conversion overhead.
 
 ### C API (FFI)
 
@@ -268,7 +284,13 @@ class Router:
     @staticmethod
     def from_binary(path: str) -> Router: ...
 
-    def route(self, embedding: list[float] | np.ndarray, cost_bias: float = 0.5) -> RouteResponse: ...
+    def route(self, embedding: np.ndarray, cost_bias: float = 0.5) -> RouteResponse:
+        """Route a single embedding. Zero-copy for float32 C-contiguous arrays."""
+        ...
+
+    def route_batch(self, embeddings: np.ndarray, cost_bias: float = 0.5) -> list[RouteResponse]:
+        """Batch route multiple embeddings (N×D array). Zero-copy for float32 C-contiguous arrays."""
+        ...
 
     def get_supported_models(self) -> list[str]: ...
     def get_n_clusters(self) -> int: ...
@@ -288,8 +310,10 @@ See [`adaptive.h`](bindings/c/adaptive.h) for the complete C API reference.
 Key functions:
 - `adaptive_router_create(path)` - Create router from file
 - `adaptive_router_route(router, embedding, size, cost_bias)` - Route request
+- `adaptive_router_route_batch(router, embeddings, n_embeddings, size, cost_bias)` - Batch route
 - `adaptive_router_route_simple(...)` - Simple routing (returns model ID only)
 - `adaptive_router_destroy(router)` - Free router resources
+- `adaptive_batch_route_result_free(result)` - Free batch result
 
 ## Performance
 

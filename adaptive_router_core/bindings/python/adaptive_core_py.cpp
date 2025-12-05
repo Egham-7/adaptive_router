@@ -27,15 +27,70 @@ NB_MODULE(adaptive_core_ext, m) {
       .def_static("from_binary", &Router::from_binary, "path"_a,
                   "Load router from binary MessagePack profile")
 
-      // Single route method - accepts both numpy arrays and Python lists
-      // nanobind automatically converts numpy arrays to std::vector<float>
+      // Route - accepts any floating point numpy array (float32, float64, etc.)
       .def(
           "route",
-          [](Router& self, const std::vector<float>& embedding, float cost_bias) {
-            return self.route(embedding.data(), embedding.size(), cost_bias);
+          [](Router& self, nb::ndarray<nb::numpy, nb::ndim<1>> embedding, float cost_bias) {
+            size_t size = embedding.shape(0);
+
+            // Handle different dtypes by calling the appropriate C++ template
+            if (embedding.dtype() == nb::dtype<float>()) {
+              const float* data = static_cast<const float*>(embedding.data());
+              return self.route(data, size, cost_bias);
+            } else if (embedding.dtype() == nb::dtype<double>()) {
+              const double* data = static_cast<const double*>(embedding.data());
+              return self.route(data, size, cost_bias);  // Uses templated method
+            } else {
+              throw std::invalid_argument("Unsupported dtype: only float32 and float64 are supported");
+            }
           },
           "embedding"_a, "cost_bias"_a = 0.5f,
-          "Route using pre-computed embedding vector (numpy array or Python list)")
+          "Route using pre-computed embedding vector (numpy array)")
+
+      // Batch route - accepts any floating point 2D numpy array
+      .def(
+          "route_batch",
+          [](Router& self, nb::ndarray<nb::numpy, nb::ndim<2>> embeddings, float cost_bias) {
+            size_t n_embeddings = embeddings.shape(0);
+            size_t embedding_dim = embeddings.shape(1);
+
+            if (embedding_dim != static_cast<size_t>(self.get_embedding_dim())) {
+              throw std::invalid_argument(
+                  "Embedding dimension mismatch: expected " +
+                  std::to_string(self.get_embedding_dim()) +
+                  ", got " + std::to_string(embedding_dim));
+            }
+
+            std::vector<RouteResponse> results;
+            results.reserve(n_embeddings);
+
+            // Handle different dtypes
+            if (embeddings.dtype() == nb::dtype<float>()) {
+              const float* data = static_cast<const float*>(embeddings.data());
+              size_t stride = embeddings.stride(0) / sizeof(float);
+
+              for (size_t i = 0; i < n_embeddings; ++i) {
+                results.push_back(
+                    self.route(data + i * stride, embedding_dim, cost_bias)
+                );
+              }
+            } else if (embeddings.dtype() == nb::dtype<double>()) {
+              const double* data = static_cast<const double*>(embeddings.data());
+              size_t stride = embeddings.stride(0) / sizeof(double);
+
+              for (size_t i = 0; i < n_embeddings; ++i) {
+                results.push_back(
+                    self.route(data + i * stride, embedding_dim, cost_bias)  // Uses templated method
+                );
+              }
+            } else {
+              throw std::invalid_argument("Unsupported dtype: only float32 and float64 are supported");
+            }
+
+            return results;
+          },
+          "embeddings"_a, "cost_bias"_a = 0.5f,
+          "Batch route multiple embeddings (N×D numpy array)")
 
       // Introspection
       .def("get_supported_models", &Router::get_supported_models,

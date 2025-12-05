@@ -21,8 +21,9 @@ class AdaptiveRouterCoreConan(ConanFile):
         cmake_layout(self)
 
     def configure(self):
-        # Ensure consistent settings across platforms
-        pass
+        # Set C++23 standard explicitly to ensure gtest and other dependencies
+        # are built with compatible standards across all platforms
+        self.settings.compiler.cppstd = "23"
 
     def validate(self):
         # Validate compiler supports C++23

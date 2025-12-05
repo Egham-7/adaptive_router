@@ -22,13 +22,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python: ['3.11', '3.12', '3.13']
+        python: ["3.11", "3.12", "3.13"]
         task: [lint, test]
         exclude:
           # Only run lint once on Python 3.12
-          - python: '3.11'
+          - python: "3.11"
             task: lint
-          - python: '3.13'
+          - python: "3.13"
             task: lint
     steps:
       - uses: actions/checkout@v6
@@ -92,15 +92,45 @@ jobs:
       matrix:
         include:
           # Linux
-          - { os: linux, runner: ubuntu-24.04, build_type: Release, python: '3.11' }
-          - { os: linux, runner: ubuntu-24.04, build_type: Release, python: '3.12' }
-          - { os: linux, runner: ubuntu-24.04, build_type: Release, python: '3.13' }
-          - { os: linux, runner: ubuntu-24.04, build_type: Debug, python: '3.11' }
+          - {
+              os: linux,
+              runner: ubuntu-24.04,
+              build_type: Release,
+              python: "3.11",
+            }
+          - {
+              os: linux,
+              runner: ubuntu-24.04,
+              build_type: Release,
+              python: "3.12",
+            }
+          - {
+              os: linux,
+              runner: ubuntu-24.04,
+              build_type: Release,
+              python: "3.13",
+            }
+          - {
+              os: linux,
+              runner: ubuntu-24.04,
+              build_type: Debug,
+              python: "3.11",
+            }
           # macOS
-          - { os: macos, runner: macos-15, build_type: Release, python: '3.12' }
+          - { os: macos, runner: macos-15, build_type: Release, python: "3.12" }
           # Windows
-          - { os: windows, runner: windows-2025, build_type: Release, python: '3.11' }
-          - { os: windows, runner: windows-2025, build_type: Debug, python: '3.11' }
+          - {
+              os: windows,
+              runner: windows-2025,
+              build_type: Release,
+              python: "3.11",
+            }
+          - {
+              os: windows,
+              runner: windows-2025,
+              build_type: Debug,
+              python: "3.11",
+            }
 
     steps:
       - uses: actions/checkout@v6
@@ -138,11 +168,11 @@ jobs:
             -s build_type=${{ matrix.build_type }} \
             -s compiler.cppstd=23
 
-       # ---- UV: Sync Python packages (for nanobind) ----
-       - name: Sync workspace
-         env:
-           CMAKE_TOOLCHAIN_FILE: ${{ github.workspace }}/adaptive_router_core/build/build/${{ matrix.build_type }}/generators/conan_toolchain.cmake
-         run: uv sync
+        # ---- UV: Sync Python packages (for nanobind) ----
+      - name: Sync workspace
+        env:
+          CMAKE_TOOLCHAIN_FILE: ${{ github.workspace }}/adaptive_router_core/build/build/${{ matrix.build_type }}/generators/conan_toolchain.cmake
+        run: uv sync
 
       # ---- CMake: Configure & Build ----
       - name: Configure CMake

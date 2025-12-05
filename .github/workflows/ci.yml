@@ -144,53 +144,53 @@ jobs:
         with:
           enable-cache: true
 
-       # ---- UV: Sync Python packages (build backend handles Conan) ----
-       - name: Sync workspace
-         run: uv sync
+      # ---- UV: Sync Python packages (build backend handles Conan) ----
+      - name: Sync workspace
+        run: uv sync
 
-       # ---- CMake: Configure & Build ----
-       - name: Configure CMake
-         working-directory: adaptive_router_core
-         shell: bash
-         run: |
-           NANOBIND_DIR=$(cd .. && uv run python -c "import nanobind; print(nanobind.cmake_dir())")
-           cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DBUILD_TESTING=ON -Dnanobind_DIR="${NANOBIND_DIR}"
+      # ---- CMake: Configure & Build ----
+      - name: Configure CMake
+        working-directory: adaptive_router_core
+        shell: bash
+        run: |
+          NANOBIND_DIR=$(cd .. && uv run python -c "import nanobind; print(nanobind.cmake_dir())")
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DBUILD_TESTING=ON -Dnanobind_DIR="${NANOBIND_DIR}"
 
-       - name: Build
-         working-directory: adaptive_router_core
-         shell: bash
-         run: |
-           if [ "${{ runner.os }}" = "Windows" ]; then
-             cmake --build build --config ${{ matrix.build_type }} --parallel
-           else
-             cmake --build build --parallel
-           fi
+      - name: Build
+        working-directory: adaptive_router_core
+        shell: bash
+        run: |
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            cmake --build build --config ${{ matrix.build_type }} --parallel
+          else
+            cmake --build build --parallel
+          fi
 
-       # ---- Test ----
-       - name: Test C++
-         working-directory: adaptive_router_core
-         shell: bash
-         run: |
-           if [ "${{ runner.os }}" = "Windows" ]; then
-             ctest --test-dir build -C ${{ matrix.build_type }} --output-on-failure
-           else
-             ctest --test-dir build --output-on-failure
-           fi
+      # ---- Test ----
+      - name: Test C++
+        working-directory: adaptive_router_core
+        shell: bash
+        run: |
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            ctest --test-dir build -C ${{ matrix.build_type }} --output-on-failure
+          else
+            ctest --test-dir build --output-on-failure
+          fi
 
-       - name: Test Python bindings
-         shell: bash
-         run: |
-           MODULE_PATH="${{ github.workspace }}/adaptive_router_core/build/bindings/python"
-           python -c "import sys; sys.path.insert(0, '${MODULE_PATH}'); import adaptive_core_ext; print(f'Module version: {adaptive_core_ext.__version__}')"
+      - name: Test Python bindings
+        shell: bash
+        run: |
+          MODULE_PATH="${{ github.workspace }}/adaptive_router_core/build/bindings/python"
+          python -c "import sys; sys.path.insert(0, '${MODULE_PATH}'); import adaptive_core_ext; print(f'Module version: {adaptive_core_ext.__version__}')"
 
-       # ---- Artifacts ----
-       - name: Upload build artifacts
-         uses: actions/upload-artifact@v4
-         with:
-           name: adaptive-core-${{ matrix.os }}-${{ matrix.build_type }}-py${{ matrix.python }}
-           path: |
-             adaptive_router_core/build/bindings/python/*adaptive_core_ext*
-             adaptive_router_core/build/*adaptive_c*
+      # ---- Artifacts ----
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: adaptive-core-${{ matrix.os }}-${{ matrix.build_type }}-py${{ matrix.python }}
+          path: |
+            adaptive_router_core/build/bindings/python/*adaptive_core_ext*
+            adaptive_router_core/build/*adaptive_c*
           retention-days: 7
 
   # ============================================================

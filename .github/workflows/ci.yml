@@ -62,6 +62,18 @@ jobs:
       - name: Test
         run: uv run pytest -v --tb=short
 
+      # Test C++ core (manual CMake for testing)
+      - name: Test C++ core
+        working-directory: adaptive_router_core
+        shell: bash
+        run: |
+          pip install nanobind conan cmake ninja
+          conan profile detect --force
+          conan install . --build=missing -of=build
+          cmake -S . -B build -DBUILD_TESTING=ON -DCMAKE_TOOLCHAIN_FILE=build/conan_toolchain.cmake
+          cmake --build build --parallel
+          ctest --test-dir build --output-on-failure
+
   deploy:
     name: Deploy to Modal (${{ matrix.environment }})
     runs-on: ubuntu-latest

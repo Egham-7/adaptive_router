@@ -70,7 +70,7 @@ jobs:
         run: |
           pip install nanobind conan cmake ninja
           conan profile detect --force
-          conan install . --build=missing -of=build
+          conan install . --build=missing -of=build -s compiler.cppstd=20
           cmake --preset conan-release -DBUILD_TESTING=ON -Dnanobind_DIR=$(python -c "import nanobind; print(nanobind.cmake_dir())")
           cmake --build --preset conan-release --parallel
           ctest --preset conan-release --output-on-failure

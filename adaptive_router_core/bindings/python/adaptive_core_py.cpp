@@ -21,12 +21,37 @@ NB_MODULE(adaptive_core_ext, m) {
 
   // Router class
   nb::class_<Router>(m, "Router")
-      // Factory methods
-      .def_static("from_file", &Router::from_file, "path"_a, "Load router from JSON profile file")
-      .def_static("from_json_string", &Router::from_json_string, "json_str"_a,
-                  "Load router from JSON string")
-      .def_static("from_binary", &Router::from_binary, "path"_a,
-                  "Load router from binary MessagePack profile")
+      // Factory methods - wrap to convert Result<Router, string> errors to exceptions
+      .def_static(
+          "from_file",
+          [](const std::string& path) {
+            auto result = Router::from_file(path);
+            if (!result) {
+              throw std::runtime_error(result.error());
+            }
+            return std::move(result.value());
+          },
+          "path"_a, "Load router from JSON profile file")
+      .def_static(
+          "from_json_string",
+          [](const std::string& json_str) {
+            auto result = Router::from_json_string(json_str);
+            if (!result) {
+              throw std::runtime_error(result.error());
+            }
+            return std::move(result.value());
+          },
+          "json_str"_a, "Load router from JSON string")
+      .def_static(
+          "from_binary",
+          [](const std::string& path) {
+            auto result = Router::from_binary(path);
+            if (!result) {
+              throw std::runtime_error(result.error());
+            }
+            return std::move(result.value());
+          },
+          "path"_a, "Load router from binary MessagePack profile")
 
       // Route - accepts any floating point numpy array (float32, float64, etc.)
       .def(

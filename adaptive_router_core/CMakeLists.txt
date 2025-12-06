@@ -47,6 +47,11 @@ else()
 endif()
 
 # -----------------------------------------------------------------------------
+# Standard install directories (must be before any use of CMAKE_INSTALL_*)
+# -----------------------------------------------------------------------------
+include(GNUInstallDirs)
+
+# -----------------------------------------------------------------------------
 # Prevent in-source builds
 # -----------------------------------------------------------------------------
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR)
@@ -229,6 +234,9 @@ if(ADAPTIVE_ENABLE_CUDA)
     CUDA_ARCHITECTURES native  # Auto-detect GPU architecture
   )
 
+  # Define CUDA macro so the .cu file sees it during compilation
+  target_compile_definitions(adaptive_core_cuda PRIVATE ADAPTIVE_HAS_CUDA=1)
+
   # Link CUDA support into core library
   target_link_libraries(adaptive_core PRIVATE adaptive_core_cuda)
   target_compile_definitions(adaptive_core PUBLIC ADAPTIVE_HAS_CUDA=1)
@@ -327,7 +335,6 @@ endif()
 # -----------------------------------------------------------------------------
 # Installation (CMake package config)
 # -----------------------------------------------------------------------------
-include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
 install(TARGETS adaptive_core adaptive_c

@@ -4,22 +4,6 @@
 
 **IMPORTANT**: When working on this service, remember to:
 
-### Memory Management
-
-Use ByteRover MCP for persistent memory across sessions:
-
-- **Before adding memories**: Always search first with `mcp__byterover-mcp__byterover-retrieve-knowledge` to avoid duplicates
-- **Add memories**: Use `mcp__byterover-mcp__byterover-store-knowledge` for ML model configurations, training results, troubleshooting solutions
-- **Search memories**: Use `mcp__byterover-mcp__byterover-retrieve-knowledge` to recall previous conversations and solutions
-- **Best practices for memory storage**: Only commit meaningful, reusable information like ML model patterns, PyTorch configurations, classification algorithms, cost optimization strategies, and implementation details that provide value beyond common knowledge
-
-### Documentation
-
-For documentation needs, use Ref MCP tools:
-
-- **Search docs**: Use `mcp__Ref__ref_search_documentation` for Python, FastAPI, PyTorch, HuggingFace, scikit-learn documentation
-- **Read specific docs**: Use `mcp__Ref__ref_read_url` to read documentation pages
-
 ## Overview
 
 The adaptive_router service is a unified Python ML package that provides intelligent model selection for the Adaptive LLM infrastructure. It uses cluster-based intelligent routing with per-cluster error rates to select optimal LLM models. The service supports two deployment modes: Library (import and use directly in Python code) and FastAPI (HTTP API server with GPU-accelerated inference on T4 GPUs).
@@ -118,6 +102,7 @@ adaptive_router/  # Repository root (workspace root)
 ```
 
 **Package Dependencies:**
+
 - The library (`adaptive_router/`) has its own `pyproject.toml` with ML dependencies (PyTorch, sentence-transformers, scikit-learn, etc.)
 - The app (`pyproject.toml` root) depends on `adaptive-router` via local path dependency
 - Both packages are installed in editable mode during development
@@ -464,12 +449,12 @@ The `ClusterEngine` handles K-means clustering operations:
 
 The `FeatureExtractor` converts prompts to feature vectors:
 
-- **Sentence transformer embeddings using `all-MiniLM-L6-v2` (384D)
-- **TF-IDF features for lexical patterns (5000D)
-- **StandardScaler normalization for both feature types
-- **Concatenated 5384D feature vectors
-- **GPU-accelerated inference on T4 GPUs (Modal deployment)
-- **Cached models for fast subsequent requests
+- \*\*Sentence transformer embeddings using `all-MiniLM-L6-v2` (384D)
+- \*\*TF-IDF features for lexical patterns (5000D)
+- \*\*StandardScaler normalization for both feature types
+- \*\*Concatenated 5384D feature vectors
+- \*\*GPU-accelerated inference on T4 GPUs (Modal deployment)
+- \*\*Cached models for fast subsequent requests
 
 ### Profile Loaders
 

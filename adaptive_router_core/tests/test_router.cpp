@@ -362,8 +362,12 @@ TEST_F(RouterTest, ResponseContainsAllRequiredFields) {
   EXPECT_GE(response.cluster_id, 0);
   EXPECT_LT(response.cluster_id, 3);
   EXPECT_GE(response.cluster_distance, 0.0f);
-  // alternatives can be empty, but should not exceed model count - 1
-  EXPECT_LE(response.alternatives.size(), 1);
+  // alternatives can be empty, but should not exceed min(max_alternatives, model_count - 1)
+  const auto models = router.get_supported_models();
+  const auto model_count = static_cast<unsigned int>(models.size());
+  const auto max_alternatives = 2u;  // from test profile routing.max_alternatives
+  const auto max_possible_alternatives = std::min(max_alternatives, model_count - 1u);
+  EXPECT_LE(response.alternatives.size(), max_possible_alternatives);
 }
 
 TEST_F(RouterTest, AlternativeModelsAreDifferentFromSelected) {

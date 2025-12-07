@@ -87,6 +87,11 @@ jobs:
           enable-cache: false
           python-version: "3.12"
 
+      - name: Clear build caches
+        run: |
+          rm -rf ~/.conan2
+          rm -rf ~/.cache/uv
+
       - name: Install package
         run: uv sync --extra cuda
 

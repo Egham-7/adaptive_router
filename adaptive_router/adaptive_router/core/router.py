@@ -42,6 +42,7 @@ def _get_device() -> str:
     """Get the best available device for embedding computation."""
     try:
         import torch
+
         if torch.cuda.is_available():
             return "cuda"
         if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
@@ -136,7 +137,8 @@ class ModelRouter:
 
         # Load profile to get metadata (need to read it ourselves)
         import msgpack
-        with open(path, 'rb') as f:
+
+        with open(path, "rb") as f:
             profile_dict = msgpack.unpackb(f.read(), raw=False)
         profile = RouterProfile(**profile_dict)
 
@@ -225,7 +227,9 @@ class ModelRouter:
     ) -> SentenceTransformer:
         """Load and configure the embedding model."""
         device = _get_device()
-        logger.info(f"Loading embedding model '{embedding_model_name}' on device: {device}")
+        logger.info(
+            f"Loading embedding model '{embedding_model_name}' on device: {device}"
+        )
 
         if allow_trust_remote_code:
             logger.warning(

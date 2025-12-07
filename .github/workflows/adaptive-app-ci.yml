@@ -104,6 +104,14 @@ jobs:
         uses: actions/checkout@v6
 
       - if: github.ref == matrix.branch
+        name: Install CUDA Toolkit
+        uses: Jimver/cuda-toolkit@v0.2.29
+        with:
+          cuda: '12.6.2'
+          method: 'network'
+          sub-packages: '["nvcc", "cudart"]'
+
+      - if: github.ref == matrix.branch
         name: Setup uv
         uses: astral-sh/setup-uv@v7
         with:
@@ -115,7 +123,7 @@ jobs:
 
       - if: github.ref == matrix.branch
         name: Install package
-        run: uv sync
+        run: uv sync --extra cuda
 
       - if: github.ref == matrix.branch
         name: Deploy to Modal

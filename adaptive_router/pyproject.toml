@@ -34,8 +34,12 @@ dependencies = [
   # Evaluation
   "deepeval>=3.7.0",
   "einops>=0.8.1",
-  "adaptive-router-core-cu12",
+  "adaptive-router-core",
+  "msgpack>=1.1.2",
 ]
+
+[project.optional-dependencies]
+cuda = ["adaptive-router-core-cu12"]
 
 [project.urls]
 Homepage = "https://llmadaptive.uk"
@@ -44,6 +48,7 @@ Documentation = "https://docs.llmadaptive.uk"
 "Bug Tracker" = "https://github.com/Egham-7/adaptive/issues"
 
 [tool.uv.sources]
+adaptive-router-core = { workspace = true }
 adaptive-router-core-cu12 = { workspace = true }
 
 [dependency-groups]

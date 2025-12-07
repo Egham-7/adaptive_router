@@ -84,16 +84,11 @@ jobs:
       - name: Setup uv
         uses: astral-sh/setup-uv@v7
         with:
-          enable-cache: false
+          enable-cache: true
           python-version: "3.12"
 
-      - name: Clear build caches
-        run: |
-          rm -rf ~/.conan2
-          rm -rf ~/.cache/uv
-
       - name: Install package
-        run: uv sync --extra cuda
+        run: uv sync
 
       - name: Deploy to Modal
         run: uv run modal deploy adaptive_router_app/main.py

@@ -35,7 +35,6 @@ dependencies = [
   # Evaluation
   "deepeval>=3.7.0",
   "einops>=0.8.1",
-  "adaptive-router-core",
   "msgpack>=1.1.2",
 ]
 
@@ -52,7 +51,11 @@ Documentation = "https://docs.llmadaptive.uk"
 adaptive-router-core = { workspace = true }
 adaptive-router-core-cu12 = { workspace = true }
 
+[tool.uv]
+default-groups = ["cpu"]
+
 [dependency-groups]
+cpu = ["adaptive-router-core"]
 dev = [
   "mypy>=1.15.0,<2",
   "ruff>=0.11.11,<0.14",

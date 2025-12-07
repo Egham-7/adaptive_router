@@ -24,8 +24,8 @@ classifiers = [
   "Typing :: Typed",
 ]
 dependencies = [
-  # Core library dependency with GPU support for production
-  "adaptive-router",
+  # Core library dependency with CUDA for GPU production deployment
+  "adaptive-router[cuda]",
   # Data Validation
   "pydantic-settings>=2.0.0,<3",
   # API Framework
@@ -37,12 +37,6 @@ dependencies = [
 [tool.uv.sources]
 # Workspace member dependency
 adaptive-router = { workspace = true }
-
-[project.optional-dependencies]
-cuda = [
-  # Enable CUDA-enabled core through the library extra
-  "adaptive-router[cuda]",
-]
 
 [project.urls]
 Homepage = "https://llmadaptive.uk"

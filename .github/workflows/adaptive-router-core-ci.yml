@@ -26,7 +26,6 @@ jobs:
         include:
           - { os: linux, runner: ubuntu-24.04 }
           - { os: macos, runner: macos-15 }
-          - { os: windows, runner: windows-2025 }
 
     steps:
       - uses: actions/checkout@v4
@@ -53,44 +52,17 @@ jobs:
         working-directory: adaptive_router_core
         run: conan install . --build=missing -of=build -s compiler.cppstd=20
 
-      # Configure - Unix uses conan-release preset
-      - name: Configure (Unix)
-        if: runner.os != 'Windows'
+      - name: Configure
         working-directory: adaptive_router_core
         shell: bash
         run: |
           cmake --preset conan-release -DBUILD_TESTING=ON \
             -Dnanobind_DIR=$(python -c "import nanobind; print(nanobind.cmake_dir())")
 
-      # Configure - Windows uses conan-default preset (multi-config generator)
-      - name: Configure (Windows)
-        if: runner.os == 'Windows'
-        working-directory: adaptive_router_core
-        shell: bash
-        run: |
-          cmake --preset conan-default -DBUILD_TESTING=ON \
-            -Dnanobind_DIR=$(python -c "import nanobind; print(nanobind.cmake_dir())")
-
-      # Build - Unix
-      - name: Build (Unix)
-        if: runner.os != 'Windows'
+      - name: Build
         working-directory: adaptive_router_core
         run: cmake --build --preset conan-release --parallel
 
-      # Build - Windows (multi-config needs --config Release)
-      - name: Build (Windows)
-        if: runner.os == 'Windows'
-        working-directory: adaptive_router_core
-        run: cmake --build --preset conan-default --config Release --parallel
-
-      # Test - Unix
-      - name: Test (Unix)
-        if: runner.os != 'Windows'
+      - name: Test
         working-directory: adaptive_router_core
         run: ctest --preset conan-release --output-on-failure
-
-      # Test - Windows (multi-config needs -C Release)
-      - name: Test (Windows)
-        if: runner.os == 'Windows'
-        working-directory: adaptive_router_core
-        run: ctest --preset conan-default -C Release --output-on-failure

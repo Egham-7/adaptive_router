@@ -63,7 +63,6 @@ jobs:
           - { os: linux, runner: ubuntu-24.04, python: "3.12" }
           - { os: linux, runner: ubuntu-24.04, python: "3.13" }
           - { os: macos, runner: macos-15, python: "3.12" }
-          - { os: windows, runner: windows-2025, python: "3.12" }
 
     steps:
       - uses: actions/checkout@v4

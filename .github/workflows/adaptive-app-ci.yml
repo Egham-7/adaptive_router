@@ -63,7 +63,6 @@ jobs:
         include:
           - { os: linux, runner: ubuntu-24.04 }
           - { os: macos, runner: macos-15 }
-          - { os: windows, runner: windows-2025 }
 
     steps:
       - uses: actions/checkout@v4

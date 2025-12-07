@@ -7,7 +7,7 @@ name = "adaptive_router"
 version = "0.1.0"
 description = "Intelligent LLM Infrastructure with Smart Model Selection"
 authors = [{ name = "Botir Khaltaev", email = "botirkhaltaev@llmadaptive.uk" }]
-requires-python = ">=3.12,<4.0"
+requires-python = ">=3.11,<4.0"
 readme = "README.md"
 license = "MIT"
 keywords = ["llm", "ai", "model-selection", "machine-learning", "adaptive"]
@@ -17,6 +17,7 @@ classifiers = [
   "License :: OSI Approved :: MIT License",
   "Operating System :: OS Independent",
   "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Topic :: Scientific/Engineering :: Artificial Intelligence",
   "Topic :: Software Development :: Libraries :: Python Modules",

@@ -23,6 +23,9 @@ jobs:
   lint:
     name: Lint
     runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: adaptive_router
     steps:
       - uses: actions/checkout@v4
 
@@ -35,20 +38,23 @@ jobs:
         with:
           enable-cache: true
 
-      - name: Build all packages
+      - name: Install package
         run: uv sync
 
       - name: Lint
         run: |
-          uv run ruff check --output-format=github adaptive_router
-          uv run ruff format --check adaptive_router
-          uv run mypy adaptive_router --config-file=adaptive_router/pyproject.toml
+          uv run ruff check --output-format=github .
+          uv run ruff format --check .
+          uv run mypy .
 
   test:
     name: Test (py${{ matrix.python }}, ${{ matrix.os }})
     needs: lint
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: adaptive_router
     strategy:
       fail-fast: false
       matrix:
@@ -71,8 +77,8 @@ jobs:
         with:
           enable-cache: true
 
-      - name: Build all packages
+      - name: Install package
         run: uv sync
 
       - name: Test
-        run: uv run pytest adaptive_router/tests -v --tb=short
+        run: uv run pytest tests -v --tb=short

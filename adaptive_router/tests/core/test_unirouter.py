@@ -4,7 +4,6 @@ from typing import List
 
 import pytest
 
-from adaptive_router.models.api import Model
 from adaptive_router.core.cluster_engine import ClusterEngine
 from adaptive_router.core.router import ModelRouter
 

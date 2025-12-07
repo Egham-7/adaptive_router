@@ -119,7 +119,7 @@ jobs:
 
       - if: github.ref == matrix.branch
         name: Deploy to Modal
-        run: uv run modal deploy main.py
+        run: uv run modal deploy adaptive_router_app/main.py
         env:
           MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
           MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}

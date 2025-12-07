@@ -42,7 +42,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install package
-        run: uv sync
+        run: uv sync --group dev
 
       - name: Lint
         run: |

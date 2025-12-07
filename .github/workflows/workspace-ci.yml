@@ -30,6 +30,14 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
 
+      - name: Install CUDA Toolkit (Linux only)
+        if: matrix.os == 'linux'
+        uses: Jimver/cuda-toolkit@v0.2.29
+        with:
+          cuda: '12.6.2'
+          method: 'network'
+          sub-packages: '["nvcc", "cudart", "cublas"]'
+
       - name: Setup uv
         uses: astral-sh/setup-uv@v7
         with:

@@ -30,7 +30,7 @@ name = "adaptive-router"
 version = "0.1.0"
 source = { editable = "adaptive_router" }
 dependencies = [
-    { name = "adaptive-router-core-cu12" },
+    { name = "adaptive-router-core" },
     { name = "boto3" },
     { name = "datasets" },
     { name = "deepeval" },
@@ -39,6 +39,11 @@ dependencies = [
     { name = "polars" },
     { name = "pydantic" },
     { name = "sentence-transformers" },
+]
+
+[package.optional-dependencies]
+cuda = [
+    { name = "adaptive-router-core-cu12" },
 ]
 
 [package.dev-dependencies]
@@ -59,7 +64,8 @@ test = [
 
 [package.metadata]
 requires-dist = [
-    { name = "adaptive-router-core-cu12", editable = "adaptive_router_core_cu12" },
+    { name = "adaptive-router-core", editable = "adaptive_router_core" },
+    { name = "adaptive-router-core-cu12", marker = "extra == 'cuda'", editable = "adaptive_router_core_cu12" },
     { name = "boto3", specifier = ">=1.34.0,<2" },
     { name = "datasets", specifier = ">=4.4.1" },
     { name = "deepeval", specifier = ">=3.7.0" },
@@ -69,6 +75,7 @@ requires-dist = [
     { name = "pydantic", specifier = ">=2.11.5,<3" },
     { name = "sentence-transformers", specifier = ">=2.7.0,<3" },
 ]
+provides-extras = ["cuda"]
 
 [package.metadata.requires-dev]
 dev = [

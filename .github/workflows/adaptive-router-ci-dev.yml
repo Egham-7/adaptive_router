@@ -28,7 +28,7 @@ jobs:
     timeout-minutes: 30
     defaults:
       run:
-        working-directory: adaptive_router
+        working-directory: adaptive_router/adaptive_router
     strategy:
       fail-fast: false
       matrix:
@@ -52,7 +52,7 @@ jobs:
           enable-cache: true
           python-version: ${{ matrix.python }}
 
-      - name: Install package
+      - name: Install package (dev + CPU backend)
         run: uv sync --group dev
 
       - name: Lint

@@ -30,20 +30,14 @@ dependencies = [
   "fastapi>=0.118.2",
   # Serverless Deployment
   "modal>=1.2.4",
-  # Adaptive Router library (CPU core by default)
-  "adaptive-router>=0.1.0,<1",
 ]
-
-[tool.uv.sources]
-# Workspace member dependency
-adaptive-router = { workspace = true }
 
 [tool.uv]
 default-groups = ["cpu"]
 
 [dependency-groups]
-cpu = ["adaptive-router"]
-cuda = ["adaptive-router[cuda]"]
+cpu = ["adaptive-router>=0.1.0,<1"]
+cuda = ["adaptive-router[cuda]>=0.1.0,<1"]
 
 dev = [
   "mypy>=1.15.0,<2",

@@ -24,8 +24,6 @@ classifiers = [
   "Typing :: Typed",
 ]
 dependencies = [
-  # Core library dependency with CUDA for GPU production deployment
-  "adaptive-router[cuda]",
   # Data Validation
   "pydantic-settings>=2.0.0,<3",
   # API Framework
@@ -38,7 +36,13 @@ dependencies = [
 # Workspace member dependency
 adaptive-router = { workspace = true }
 
+[tool.uv]
+default-groups = ["cpu"]
+
 [dependency-groups]
+cpu = ["adaptive-router"]
+cuda = ["adaptive-router[cuda]"]
+
 dev = [
   "mypy>=1.15.0,<2",
   "ruff>=0.11.11,<0.15",

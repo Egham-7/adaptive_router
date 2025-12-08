@@ -51,7 +51,7 @@ jobs:
 
       - name: Install package (dev + CPU backend)
         working-directory: adaptive_router
-        run: uv sync --group dev
+        run: uv sync --group dev --extra cpu
 
       - name: Lint
         if: matrix.lint

@@ -51,14 +51,14 @@ jobs:
 
       - name: Install package (dev + CPU backend)
         working-directory: adaptive_router
-        run: uv sync --group dev --package adaptive_router
+        run: uv sync --group dev --group cpu
 
       - name: Lint
         if: matrix.lint
         run: |
-          uv run --package adaptive_router ruff check --output-format=github .
-          uv run --package adaptive_router ruff format --check .
-          uv run --package adaptive_router mypy .
+          uv run ruff check --output-format=github .
+          uv run ruff format --check .
+          uv run mypy .
 
       - name: Build distribution
         working-directory: adaptive_router
@@ -66,4 +66,4 @@ jobs:
 
       - name: Test
         working-directory: adaptive_router
-        run: uv run --package adaptive_router pytest tests -v --tb=short
+        run: uv run pytest tests -v --tb=short

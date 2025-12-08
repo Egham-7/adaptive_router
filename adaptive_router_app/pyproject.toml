@@ -35,8 +35,8 @@ dependencies = [
 ]
 
 [tool.uv.sources]
-# Use local path for Modal uv_sync (no workspace support)
-adaptive-router = { path = "../adaptive_router" }
+# Workspace member dependency
+adaptive-router = { workspace = true }
 
 [tool.uv]
 default-groups = ["cpu"]

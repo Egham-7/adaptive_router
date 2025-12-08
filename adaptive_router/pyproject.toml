@@ -45,14 +45,18 @@ Repository = "https://github.com/Egham-7/adaptive"
 Documentation = "https://docs.llmadaptive.uk"
 "Bug Tracker" = "https://github.com/Egham-7/adaptive/issues"
 
+
+[project.optional-dependencies]
+cpu = ["adaptive-router-core>=0.1.0,<1"]
+cuda = ["adaptive-router-core-cu12>=0.1.0,<1"]
+
+
 [tool.uv.sources]
 adaptive-router-core = { workspace = true }
 adaptive-router-core-cu12 = { workspace = true }
 
 
 [dependency-groups]
-cpu = ["adaptive-router-core>=0.1.0,<1"]
-cuda = ["adaptive-router-core-cu12>=0.1.0,<1"]
 
 dev = [
   "mypy>=1.15.0,<2",

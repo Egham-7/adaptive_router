@@ -31,14 +31,13 @@ jobs:
         run: uv tool install conan
 
       - name: Build wheel
-        run: uv build --wheel
-        working-directory: ./adaptive_router_core
+        run: uv build --no-sources --package adaptive-router-core
 
       - name: Upload wheel
         uses: actions/upload-artifact@v4
         with:
           name: wheel-${{ matrix.os }}
-          path: ./adaptive_router_core/dist/*.whl
+          path: dist/*.whl
 
   publish:
     needs: build

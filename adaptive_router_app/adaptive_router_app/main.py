@@ -374,6 +374,7 @@ image = (
             "SENTENCE_TRANSFORMERS_HOME": "/vol/model_cache",
         }
     )
+    .add_local_python_source("adaptive_router_core", copy=True)
     .add_local_python_source(
         "adaptive_router", copy=True
     )  # Add library package first (so it's available)

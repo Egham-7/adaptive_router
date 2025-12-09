@@ -37,9 +37,10 @@ jobs:
               libcusparse-devel-12-9 \
               libcurand-devel-12-9 \
               libnvjitlink-devel-12-9
+            ln -s /usr/local/cuda-12.9 /usr/local/cuda || true
             dnf clean all
           CIBW_BEFORE_BUILD: "pip install conan && conan profile detect --force"
-          CIBW_ENVIRONMENT: "PATH=/usr/local/cuda-12.9/bin:$PATH LD_LIBRARY_PATH=/usr/local/cuda-12.9/lib64:$LD_LIBRARY_PATH"
+          CIBW_ENVIRONMENT: "CUDACXX=/usr/local/cuda-12.9/bin/nvcc CUDAToolkit_ROOT=/usr/local/cuda-12.9 PATH=/usr/local/cuda-12.9/bin:$PATH LD_LIBRARY_PATH=/usr/local/cuda-12.9/lib64:$LD_LIBRARY_PATH"
         with:
           package-dir: ./adaptive_router_core_cu12
 

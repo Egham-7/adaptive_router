@@ -1,296 +1,104 @@
 # Adaptive Router
 
-## Intelligent LLM Model Selection via ML-Powered Clustering
-
-Reduce costs by 30-70% using cluster-based routing with per-cluster error rates and prompt analysis.
+Intelligent LLM model selection via ML-powered clustering. Reduce costs by 30-70% using cluster-based routing with per-cluster error rates and prompt analysis.
 
 [![PyPI](https://img.shields.io/pypi/v/adaptive-router)](https://pypi.org/project/adaptive-router/)
 [![Python](https://img.shields.io/pypi/pyversions/adaptive-router)](https://pypi.org/project/adaptive-router/)
 [![License](https://img.shields.io/github/license/Egham-7/adaptive)](https://github.com/Egham-7/adaptive/blob/main/LICENSE)
 
-## How It Works
+## What It Does
 
-1. **Feature Extraction**: Semantic embeddings using SentenceTransformers
-2. **Clustering**: Groups similar prompts using K-means
-3. **Performance Tracking**: Maintains per-cluster error rates for each model
-4. **Smart Selection**: Balances quality vs. cost using configurable `cost_bias`
+1. **Semantic Clustering**: Groups similar prompts using sentence embeddings
+2. **Performance Tracking**: Maintains per-cluster error rates for each model
+3. **Smart Selection**: Balances quality vs. cost using configurable `cost_bias`
 
-Prompts with similar semantics often require similar model capabilities. By clustering prompts and tracking performance per cluster, routing becomes data-driven rather than rule-based.
+## Installation
+
+**Note**: Adaptive Router requires either the CPU or CUDA C++ core to function.
+
+### CPU Version (Recommended)
+```bash
+pip install adaptive-router[cpu]
+```
+
+### CUDA Version (GPU Accelerated)
+```bash
+pip install adaptive-router[cu12]
+```
+
+### From Source (Development)
+```bash
+git clone https://github.com/Egham-7/adaptive
+cd adaptive
+uv sync --package adaptive-router  # Includes CPU core
+```
+
+**Requirements**: Python 3.11+, CMake (for compilation), optional: CUDA 12.x (for GPU version)
 
 ## Quick Start
 
-### Installation
-
-```bash
-pip install adaptive-router
-```
-
-### Library Usage
-
-**Basic Usage:**
-
-```python
-from adaptive_router import ModelRouter, ModelSelectionRequest
-
-# Load router from profile (models included in profile)
-router = ModelRouter.from_local_file("router_profile.json")
-
-# Select model
-response = router.select_model(
-    ModelSelectionRequest(
-        prompt="Write a Python function to sort a list",
-        cost_bias=0.3  # 0.0=cheapest, 1.0=best quality
-    )
-)
-
-print(f"Selected: {response.model_id}")  # e.g., "openai/gpt-3.5-turbo"
-print(f"Alternatives: {[alt.model_id for alt in response.alternatives]}")
-```
-
-**Quick Routing (Just Get Model ID):**
-
+### Basic Usage
 ```python
 from adaptive_router import ModelRouter
 
-router = ModelRouter.from_local_file("router_profile.json")
+# Load trained profile
+router = ModelRouter.from_json_file("profile.json")
 
-# Just get the model ID string
-model_id = router.route("Write a sorting algorithm", cost_bias=0.3)
+# Select optimal model
+model_id = router.route("Write a Python sorting function", cost_bias=0.3)
 print(model_id)  # "openai/gpt-3.5-turbo"
 ```
 
-**Advanced Usage with Model Filtering:**
-
+### Advanced Usage
 ```python
-from adaptive_router import ModelRouter, ModelSelectionRequest, Model
-
-router = ModelRouter.from_local_file("router_profile.json")
-
-# Optionally filter to specific models
-allowed_models = [
-    Model(
-        provider="openai",
-        model_name="gpt-4",
-        cost_per_1m_input_tokens=30.0,
-        cost_per_1m_output_tokens=60.0,
-    )
-]
+from adaptive_router import ModelSelectionRequest
 
 response = router.select_model(
     ModelSelectionRequest(
         prompt="Design a distributed system",
-        cost_bias=0.9,  # Prefer quality
-        models=allowed_models  # Optional: restrict to these models
+        cost_bias=0.9  # Prefer quality over cost
     )
 )
+
+print(f"Selected: {response.model_id}")
+print(f"Alternatives: {[alt.model_id for alt in response.alternatives]}")
 ```
 
-### HTTP API
-
+### Training
 ```bash
-git clone https://github.com/Egham-7/adaptive
-cd adaptive
-uv install
-
-# Development
-fastapi dev adaptive_router_app/main.py
-
-# Production
-hypercorn adaptive_router_app.main:app --bind 0.0.0.0:8000
+# Train from CSV dataset
+uv run python adaptive_router/train/train.py \
+  --config adaptive_router/train/examples/configs/train_minimal.toml
 ```
 
-**Endpoints**:
-- `POST /select-model` - Select optimal model
-- `GET /health` - Health check
+## Key Features
 
-**Example Request**:
-```json
-{
-  "prompt": "Explain neural networks",
-  "cost_bias": 0.5
-}
-```
+- **30-70% Cost Reduction** vs. always using GPT-4
+- **10x Performance** with C++ inference core
+- **Multi-Provider Support**: OpenAI, Anthropic, and custom models
+- **Cloud Storage**: MinIO/S3 profile storage
+- **Production Ready**: Docker, Railway, and bare-metal deployment
 
-**Example Response**:
-```json
-{
-  "selected_model": "openai/gpt-3.5-turbo",
-  "alternatives": ["openai/gpt-4", "anthropic/claude-3-sonnet"]
-}
-```
+## API Overview
 
-## Training Custom Profiles
+### Core Classes
+- `ModelRouter`: Main routing interface
+- `ModelSelectionRequest`: Routing request with prompt and preferences
+- `ModelSelectionResponse`: Routing result with selected model and alternatives
 
-```bash
-# Train from labeled dataset
-uv run train/train.py --config train/examples/configs/train_minimal.toml
-```
+### Factory Methods
+- `ModelRouter.from_json_file(path)`: Load from JSON
+- `ModelRouter.from_minio(settings)`: Load from MinIO/S3
+- `ModelRouter.from_profile(profile)`: Load from memory
 
-**Minimal TOML config**:
-```toml
-[dataset]
-path = "train/examples/datasets/minimal_qa.csv"
-type = "csv"
+## Links
 
-[[models]]
-provider = "openai"
-model_name = "gpt-4"
-
-[training]
-n_clusters = 5
-
-[output]
-path = "profile.json"
-storage_type = "local"
-```
-
-Dataset requires `input` and `expected_output` columns (CSV, JSON, or Parquet).
-
-**Note**: Training produces a profile containing:
-- Cluster centers (from semantic embeddings)
-- Model definitions with costs
-- Per-cluster error rates for each model
-- Scaler parameters for normalization
-
-## API Reference
-
-### ModelRouter
-
-```python
-class ModelRouter:
-    @classmethod
-    def from_profile(cls, profile: RouterProfile) -> ModelRouter:
-        """Initialize from profile object"""
-
-    def select_model(self, request: ModelSelectionRequest) -> ModelSelectionResponse:
-        """Select optimal model"""
-```
-
-### ModelSelectionRequest
-
-```python
-class ModelSelectionRequest(BaseModel):
-    prompt: str                   # Text to analyze
-    cost_bias: float = None       # 0.0=cheap, 1.0=quality
-    models: list[Model] = None    # Constrain to specific models
-    user_id: str = None           # User identifier
-```
-
-### ModelSelectionResponse
-
-```python
-class ModelSelectionResponse(BaseModel):
-    model_id: str                     # Selected model (e.g., "openai/gpt-4")
-    alternatives: list[Alternative]   # Alternative recommendations
-```
-
-## Performance
-
-- **Cost Reduction**: 45% vs. always using GPT-4
-- **Quality**: 92% maintain acceptable quality
-- **Latency**: <50ms routing (semantic embeddings + clustering)
-- **Throughput**: 1000+ requests/second
-
-## Architecture
-
-```
-adaptive_router/
-├── adaptive_router/        # Python ML library (core routing logic)
-├── adaptive_router_app/    # FastAPI HTTP server (Modal deployment)
-└── adaptive_router_core/   # C++ inference core (optional, 10x faster)
-```
-
-## High-Performance C++ Core
-
-For production deployments requiring maximum throughput, Adaptive Router includes an optional C++ inference core:
-
-- **10x faster** than pure Python (5,000 routes/second vs 500/second)
-- **Zero-copy** Python integration via nanobind
-- **C FFI API** for integration with Rust, Go, Julia, and other languages
-- **Zero heap allocations** per routing request
-
-```python
-from sentence_transformers import SentenceTransformer
-from adaptive_core_ext import Router
-
-# Python: Compute embeddings
-model = SentenceTransformer('all-MiniLM-L6-v2')
-embedding = model.encode("prompt").tolist()
-
-# C++: Fast routing
-router = Router.from_file("profile.json")
-response = router.route(embedding, cost_bias=0.5)
-print(f"Selected: {response.selected_model}")
-```
-
-See [adaptive_router_core/README.md](adaptive_router_core/README.md) for build instructions and API reference.
-
-## Development
-
-The project is structured as a **UV workspace** with three packages:
-- **`adaptive_router/`**: Core Python ML library (routing logic, profile management)
-- **`adaptive_router_app/`**: FastAPI HTTP server (Modal/Railway deployment)
-- **`adaptive_router_core/`**: C++ inference core (optional, high-performance routing)
-
-```bash
-# Setup
-git clone https://github.com/Egham-7/adaptive
-cd adaptive
-uv sync  # Syncs entire workspace from root
-
-# Or sync specific package
-uv sync --package adaptive-router-app
-
-# The app automatically depends on the library via workspace dependency
-# Single uv.lock at root ensures consistent dependencies across packages
-
-# Test (from root)
-uv run pytest
-uv run pytest --cov
-
-# Or run tests for specific package
-uv run --package adaptive-router-app pytest
-
-# Type check & lint
-uv run mypy .
-uv run ruff check .
-```
-
-## FAQ
-
-**Q: How many training samples needed?**  
-A: 50-100 per cluster. For 5 clusters: 250-500 samples.
-
-**Q: Can I use without training?**  
-A: No, trained profile required.
-
-**Q: What do cost_bias values mean?**  
-- `0.0` = cheapest model
-- `0.5` = balanced (default)
-- `1.0` = highest quality
-
-**Q: Production deployment?**  
-A: Yes. Use `hypercorn` or deploy via Railway/Docker.
-
-## Troubleshooting
-
-**Import errors**: 
-- Run `uv install` to install dependencies
-- The library (`adaptive_router`) is automatically installed as a local editable dependency
-- If issues persist, ensure you're in the project root directory
-
-**Model selection fails**: 
-- Verify profile contains error rate data
-- Check `cost_bias` is 0.0-1.0
-- Ensure prompt is non-empty
-
-**Training issues**: Verify dataset has `input` and `expected_output` columns
+- 📖 **[Full Documentation](https://docs.llmadaptive.uk)**
+- 🚀 **[Training Guide](adaptive_router/train/examples/README.md)**
+- 🏗️ **[Architecture](ARCHITECTURE.md)**
+- 🐛 **[Issues](https://github.com/Egham-7/adaptive/issues)**
+- 💬 **[Discussions](https://github.com/Egham-7/adaptive/discussions)**
 
 ## License
 
 MIT License - see [LICENSE](LICENSE)
-
-## Support
-
-- [GitHub Issues](https://github.com/Egham-7/adaptive/issues)
-- [GitHub Discussions](https://github.com/Egham-7/adaptive/discussions)

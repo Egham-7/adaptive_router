@@ -29,13 +29,8 @@ jobs:
             dnf config-manager --add-repo https://developer.download.nvidia.com/compute/cuda/repos/rhel9/x86_64/cuda-rhel9.repo
             dnf clean all
             dnf install -y --setopt=install_weak_deps=False --setopt=tsflags=nodocs \
-              cuda-cudart-devel-12-9 \
-              cuda-driver-dev-12-9 \
-              cuda-nvcc-12-9 \
-              libcublas-devel-12-9 \
-              libcusolver-devel-12-9 \
-              libcusparse-devel-12-9 \
-              libcurand-devel-12-9 \
+              cuda-compiler-12-9 \
+              cuda-libraries-devel-12-9 \
               libnvjitlink-devel-12-9
             ln -s /usr/local/cuda-12.9 /usr/local/cuda || true
             dnf clean all

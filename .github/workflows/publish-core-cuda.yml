@@ -28,10 +28,15 @@ jobs:
             dnf install -y wget cmake dnf-plugins-core
             dnf config-manager --add-repo https://developer.download.nvidia.com/compute/cuda/repos/rhel9/x86_64/cuda-rhel9.repo
             dnf clean all
-            dnf install -y --setopt=install_weak_deps=False \
-              cuda-compiler-12-9 \
-              cuda-libraries-devel-12-9 \
-              cuda-nvcc-12-9
+            dnf install -y --setopt=install_weak_deps=False --setopt=tsflags=nodocs \
+              cuda-cudart-devel-12-9 \
+              cuda-driver-dev-12-9 \
+              cuda-nvcc-12-9 \
+              libcublas-devel-12-9 \
+              libcusolver-devel-12-9 \
+              libcusparse-devel-12-9 \
+              libcurand-devel-12-9 \
+              libnvjitlink-devel-12-9
             dnf clean all
           CIBW_BEFORE_BUILD: "pip install conan && conan profile detect --force"
           CIBW_ENVIRONMENT: "PATH=/usr/local/cuda-12.9/bin:$PATH LD_LIBRARY_PATH=/usr/local/cuda-12.9/lib64:$LD_LIBRARY_PATH"

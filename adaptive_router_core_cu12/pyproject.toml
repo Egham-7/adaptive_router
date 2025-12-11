@@ -34,6 +34,7 @@ wheel.packages = []                       # Pure extension module
 cmake.build-type = "Release"
 cmake.version = ">=3.24"
 cmake.source-dir = "../adaptive_router_core"  # Use source from CPU package
+sdist.include = ["../adaptive_router_core/conanfile.py"]
 
 [tool.scikit-build.cmake.define]
 CMAKE_EXPORT_COMPILE_COMMANDS = "ON"

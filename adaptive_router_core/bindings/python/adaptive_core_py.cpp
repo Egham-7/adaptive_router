@@ -2,7 +2,6 @@
 #include <nanobind/ndarray.h>
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/vector.h>
-#include <ranges>
 
 #include "router.hpp"
 
@@ -53,50 +52,40 @@ NB_MODULE(adaptive_core_ext, m) {
           },
           "path"_a, "Load router from MessagePack binary profile file")
 
-      // Route - accepts any floating point numpy array (float32, float64, etc.)
+      // Route - float32 version (most common case)
       .def(
           "route",
-          [](Router& self, nb::ndarray<nb::numpy, nb::ndim<1>> embedding, float cost_bias) {
-            size_t size = embedding.shape(0);
-
-            // Validate embedding dimension matches expected
-            if (size != static_cast<size_t>(self.get_embedding_dim())) {
+          [](Router& self, nb::ndarray<float, nb::ndim<1>, nb::c_contig> embedding, float cost_bias) {
+            if (embedding.shape(0) != static_cast<size_t>(self.get_embedding_dim())) {
               throw std::invalid_argument(
                   "Embedding dimension mismatch: expected " +
                   std::to_string(self.get_embedding_dim()) +
-                  ", got " + std::to_string(size));
+                  ", got " + std::to_string(embedding.shape(0)));
             }
-
-            // Handle different dtypes by calling the appropriate C++ template
-            if (embedding.dtype() == nb::dtype<float>()) {
-              // Check for contiguity: stride(0) should equal sizeof(float) for contiguous elements
-              if (embedding.stride(0) != sizeof(float)) {
-                throw std::invalid_argument(
-                    "Input array must be contiguous. "
-                    "Use numpy.ascontiguousarray() to convert non-contiguous arrays.");
-              }
-              const float* data = static_cast<const float*>(embedding.data());
-              return self.route(data, size, cost_bias);
-            } else if (embedding.dtype() == nb::dtype<double>()) {
-              // Check for contiguity: stride(0) should equal sizeof(double) for contiguous elements
-              if (embedding.stride(0) != sizeof(double)) {
-                throw std::invalid_argument(
-                    "Input array must be contiguous. "
-                    "Use numpy.ascontiguousarray() to convert non-contiguous arrays.");
-              }
-              const double* data = static_cast<const double*>(embedding.data());
-              return self.route(data, size, cost_bias);  // Uses templated method
-            } else {
-              throw std::invalid_argument("Unsupported dtype: only float32 and float64 are supported");
-            }
+            return self.route(embedding.data(), embedding.shape(0), cost_bias);
           },
           "embedding"_a, "cost_bias"_a = 0.5f,
-          "Route using pre-computed embedding vector (numpy array)")
+          "Route using pre-computed embedding vector (float32 numpy array)")
 
-      // Batch route - accepts any floating point 2D numpy array
+      // Route - float64 version
+      .def(
+          "route",
+          [](Router& self, nb::ndarray<double, nb::ndim<1>, nb::c_contig> embedding, float cost_bias) {
+            if (embedding.shape(0) != static_cast<size_t>(self.get_embedding_dim())) {
+              throw std::invalid_argument(
+                  "Embedding dimension mismatch: expected " +
+                  std::to_string(self.get_embedding_dim()) +
+                  ", got " + std::to_string(embedding.shape(0)));
+            }
+            return self.route(embedding.data(), embedding.shape(0), cost_bias);
+          },
+          "embedding"_a, "cost_bias"_a = 0.5f,
+          "Route using pre-computed embedding vector (float64 numpy array)")
+
+      // Batch route - float32 version
       .def(
           "route_batch",
-          [](Router& self, nb::ndarray<nb::numpy, nb::ndim<2>> embeddings, float cost_bias) {
+          [](Router& self, nb::ndarray<float, nb::ndim<2>, nb::c_contig> embeddings, float cost_bias) {
             size_t n_embeddings = embeddings.shape(0);
             size_t embedding_dim = embeddings.shape(1);
 
@@ -110,41 +99,42 @@ NB_MODULE(adaptive_core_ext, m) {
             std::vector<RouteResponse> results;
             results.reserve(n_embeddings);
 
-            // Helper lambda to process embeddings for a specific dtype
-            auto process_embeddings = [&]<typename Scalar>() {
-              const Scalar* data = static_cast<const Scalar*>(embeddings.data());
-
-              // Check for C-contiguity
-              if (embeddings.stride(1) != sizeof(Scalar)) {
-                throw std::invalid_argument(
-                    "Input array must be C-contiguous (row-major). "
-                    "Use numpy.ascontiguousarray() to convert non-contiguous arrays.");
-              }
-
-              size_t row_stride = embeddings.stride(0) / sizeof(Scalar);
-
-              // Use ranges to process embeddings
-              auto embedding_offsets = std::views::iota(size_t{0}, n_embeddings)
-                | std::views::transform([row_stride](size_t i) { return i * row_stride; });
-
-              for (size_t offset : embedding_offsets) {
-                results.push_back(self.route(data + offset, embedding_dim, cost_bias));
-              }
-            };
-
-            // Dispatch based on dtype using if-else chain
-            if (embeddings.dtype() == nb::dtype<float>()) {
-              process_embeddings.template operator()<float>();
-            } else if (embeddings.dtype() == nb::dtype<double>()) {
-              process_embeddings.template operator()<double>();
-            } else {
-              throw std::invalid_argument("Unsupported dtype: only float32 and float64 are supported");
+            const float* data = embeddings.data();
+            for (size_t i = 0; i < n_embeddings; ++i) {
+              results.push_back(self.route(data + i * embedding_dim, embedding_dim, cost_bias));
             }
 
             return results;
           },
           "embeddings"_a, "cost_bias"_a = 0.5f,
-          "Batch route multiple embeddings (N×D numpy array)")
+          "Batch route multiple embeddings (N×D float32 numpy array)")
+
+      // Batch route - float64 version
+      .def(
+          "route_batch",
+          [](Router& self, nb::ndarray<double, nb::ndim<2>, nb::c_contig> embeddings, float cost_bias) {
+            size_t n_embeddings = embeddings.shape(0);
+            size_t embedding_dim = embeddings.shape(1);
+
+            if (embedding_dim != static_cast<size_t>(self.get_embedding_dim())) {
+              throw std::invalid_argument(
+                  "Embedding dimension mismatch: expected " +
+                  std::to_string(self.get_embedding_dim()) +
+                  ", got " + std::to_string(embedding_dim));
+            }
+
+            std::vector<RouteResponse> results;
+            results.reserve(n_embeddings);
+
+            const double* data = embeddings.data();
+            for (size_t i = 0; i < n_embeddings; ++i) {
+              results.push_back(self.route(data + i * embedding_dim, embedding_dim, cost_bias));
+            }
+
+            return results;
+          },
+          "embeddings"_a, "cost_bias"_a = 0.5f,
+          "Batch route multiple embeddings (N×D float64 numpy array)")
 
       // Introspection
       .def("get_supported_models", &Router::get_supported_models,

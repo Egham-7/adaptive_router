@@ -32,14 +32,14 @@ endif()
 # -----------------------------------------------------------------------------
 if(ADAPTIVE_ENABLE_CUDA)
   project(adaptive_router_core
-    VERSION 0.1.0
+    VERSION 0.1.3
     DESCRIPTION "High-performance cluster-based model routing library"
     HOMEPAGE_URL "https://github.com/adaptive/adaptive_router"
     LANGUAGES CXX CUDA
   )
 else()
   project(adaptive_router_core
-    VERSION 0.1.0
+    VERSION 0.1.1
     DESCRIPTION "High-performance cluster-based model routing library"
     HOMEPAGE_URL "https://github.com/adaptive/adaptive_router"
     LANGUAGES CXX

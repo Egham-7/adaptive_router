@@ -17,20 +17,23 @@ Intelligent LLM model selection via ML-powered clustering. Reduce costs by 30-70
 **Note**: Adaptive Router requires either the CPU or CUDA C++ core to function.
 
 ### CPU Version (Recommended)
+
 ```bash
-pip install adaptive-router[cpu]
+pip install adaptiv_router[cpu]
 ```
 
 ### CUDA Version (GPU Accelerated)
+
 ```bash
-pip install adaptive-router[cu12]
+pip install adaptive_router[cu12]
 ```
 
 ### From Source (Development)
+
 ```bash
 git clone https://github.com/Egham-7/adaptive
 cd adaptive
-uv sync --package adaptive-router  # Includes CPU core
+uv sync --package adaptive_router  # Includes CPU core
 ```
 
 **Requirements**: Python 3.11+, CMake (for compilation), optional: CUDA 12.x (for GPU version)
@@ -38,6 +41,7 @@ uv sync --package adaptive-router  # Includes CPU core
 ## Quick Start
 
 ### Basic Usage
+
 ```python
 from adaptive_router import ModelRouter
 
@@ -50,6 +54,7 @@ print(model_id)  # "openai/gpt-3.5-turbo"
 ```
 
 ### Advanced Usage
+
 ```python
 from adaptive_router import ModelSelectionRequest
 
@@ -65,6 +70,7 @@ print(f"Alternatives: {[alt.model_id for alt in response.alternatives]}")
 ```
 
 ### Training
+
 ```bash
 # Train from CSV dataset
 uv run python adaptive_router/train/train.py \
@@ -82,11 +88,13 @@ uv run python adaptive_router/train/train.py \
 ## API Overview
 
 ### Core Classes
+
 - `ModelRouter`: Main routing interface
 - `ModelSelectionRequest`: Routing request with prompt and preferences
 - `ModelSelectionResponse`: Routing result with selected model and alternatives
 
 ### Factory Methods
+
 - `ModelRouter.from_json_file(path)`: Load from JSON
 - `ModelRouter.from_minio(settings)`: Load from MinIO/S3
 - `ModelRouter.from_profile(profile)`: Load from memory

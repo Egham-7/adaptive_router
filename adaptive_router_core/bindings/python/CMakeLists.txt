@@ -21,11 +21,11 @@ install(TARGETS adaptive_core_ext LIBRARY DESTINATION .)
 if(ADAPTIVE_BUILD_TESTS)
   find_package(Python REQUIRED COMPONENTS Interpreter)
 
-  add_test(
-    NAME python_bindings
-    COMMAND ${Python_EXECUTABLE} -m pytest
-      ${CMAKE_CURRENT_SOURCE_DIR}/tests -v --tb=short
-  )
+   add_test(
+     NAME python_bindings
+     COMMAND uv run pytest
+       ${CMAKE_CURRENT_SOURCE_DIR}/tests -v --tb=short
+   )
 
   # Set PYTHONPATH so tests can find the built module
   set_tests_properties(python_bindings PROPERTIES

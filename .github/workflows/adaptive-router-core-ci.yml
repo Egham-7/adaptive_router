@@ -44,8 +44,11 @@ jobs:
           restore-keys: |
             conan-${{ runner.os }}-
 
-      - name: Install build tools
-        run: pip install nanobind conan cmake ninja
+       - name: Install uv
+         uses: astral-sh/setup-uv@v4
+
+       - name: Install build tools
+         run: uv pip install conan --system
 
       - name: Setup Conan profile
         run: conan profile detect --force
@@ -54,17 +57,26 @@ jobs:
         working-directory: adaptive_router_core
         run: conan install . --build=missing -of=build -s compiler.cppstd=20
 
-      - name: Configure
-        working-directory: adaptive_router_core
-        shell: bash
-        run: |
-          cmake --preset conan-release -DBUILD_TESTING=ON \
-            -Dnanobind_DIR=$(python -c "import nanobind; print(nanobind.cmake_dir())")
+       - name: Configure
+         working-directory: adaptive_router_core
+         shell: bash
+         run: |
+           cmake --preset conan-release \
+             -DADAPTIVE_BUILD_TESTS=ON \
+             -DADAPTIVE_BUILD_PYTHON=ON \
+             -DADAPTIVE_BUILD_C=ON \
+             -DADAPTIVE_ENABLE_CUDA=OFF
 
       - name: Build
         working-directory: adaptive_router_core
         run: cmake --build --preset conan-release --parallel
 
-      - name: Test
-        working-directory: adaptive_router_core
-        run: ctest --preset conan-release --output-on-failure
+       - name: Test
+         working-directory: adaptive_router_core
+         run: ctest --preset conan-release --output-on-failure
+
+       - name: Run Python tests
+         working-directory: adaptive_router_core
+         run: |
+           uv pip install pytest numpy --system
+           PYTHONPATH=./build/build/Release/bindings/python python -m pytest bindings/python/tests/ -v

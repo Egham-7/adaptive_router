@@ -25,6 +25,7 @@ if(ADAPTIVE_BUILD_TESTS)
      NAME python_bindings
      COMMAND uv run --no-project pytest
        ${CMAKE_CURRENT_SOURCE_DIR}/tests -v --tb=short
+     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
    )
 
   # Set PYTHONPATH so tests can find the built module

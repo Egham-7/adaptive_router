@@ -1,6 +1,6 @@
 # AuroraAI Router Benchmarks
 
-Comprehensive benchmarking suite comparing **Cactus Profile Router** (ML-based) vs **Claude Sonnet 4 Oracle** (API-based) for on-device AI model routing.
+Comprehensive benchmarking suite comparing **Cactus Profile Router** (ML-based) vs **Claude Sonnet 4 Oracle** (API-based) for on-device AI model routing...
 
 ## Overview
 

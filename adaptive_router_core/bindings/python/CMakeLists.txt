@@ -23,7 +23,7 @@ if(ADAPTIVE_BUILD_TESTS)
 
    add_test(
      NAME python_bindings
-     COMMAND uv run pytest
+     COMMAND uv run --no-project pytest
        ${CMAKE_CURRENT_SOURCE_DIR}/tests -v --tb=short
    )
 

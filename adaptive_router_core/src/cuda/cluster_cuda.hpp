@@ -43,7 +43,8 @@ private:
   Scalar* d_centroid_norms_ = nullptr;  // [n_clusters] precomputed ||c_i||²
   Scalar* d_embedding_ = nullptr;       // [dim]
   Scalar* d_dots_ = nullptr;            // [n_clusters] workspace for dot products
-  Scalar* d_distances_ = nullptr;       // [n_clusters] final distances
+  int* d_best_idx_ = nullptr;           // [1] result: best cluster index
+  Scalar* d_best_dist_ = nullptr;       // [1] result: best distance
 
   int n_clusters_ = 0;
   int dim_ = 0;

@@ -4,9 +4,6 @@
 
 #include <cublas_v2.h>
 #include <cuda_runtime.h>
-#include <thrust/device_ptr.h>
-#include <thrust/execution_policy.h>
-#include <thrust/extrema.h>
 
 #include <cmath>
 #include <numeric>
@@ -19,14 +16,9 @@ namespace {
 
 template<typename Scalar>
 std::vector<Scalar> to_col_major(const Scalar* data, size_t n_clusters, size_t dim) {
-  std::vector<Scalar> result(n_clusters * dim);
-  const size_t total = n_clusters * dim;
-  std::ranges::for_each(std::views::iota(size_t{0}, total), [&](size_t idx) {
-    const size_t d = idx / dim;
-    const size_t k = idx % dim;
-    result[idx] = data[k * dim + d];
-  });
-  return result;
+  // Row-major K×D is mathematically equivalent to column-major D×K when interpreted as transpose
+  // No conversion needed - just copy the data
+  return std::vector<Scalar>(data, data + n_clusters * dim);
 }
 
 template<typename Scalar>
@@ -60,13 +52,75 @@ std::vector<Scalar> compute_norms(const Scalar* data, size_t n_clusters, size_t 
     }                                                                                              \
   } while (0)
 
-// Epilogue kernel: Compute dist²[i] = ||c_i||² + ||e||² - 2*dot[i]
+// Fused kernel: Compute distances and find argmin using warp reduction
+// Much more efficient than separate kernel + Thrust for small n_clusters (20-50)
 template<typename Scalar>
-__global__ void epilogue_kernel(const Scalar* c_norms, Scalar e_norm, const Scalar* dots,
-                                 Scalar* dists, int n) {
-  int i = blockIdx.x * blockDim.x + threadIdx.x;
-  if (i < n) {
-    dists[i] = c_norms[i] + e_norm - Scalar(2.0) * dots[i];
+__global__ void fused_distance_argmin_kernel(
+    const Scalar* __restrict__ c_norms,
+    Scalar e_norm,
+    const Scalar* __restrict__ dots,
+    int n,
+    int* __restrict__ best_idx,
+    Scalar* __restrict__ best_dist) {
+
+  // Shared memory for warp reduction (max 32 warps per block)
+  __shared__ Scalar s_min_dist[32];
+  __shared__ int s_min_idx[32];
+
+  int tid = threadIdx.x;
+  int lane = tid & 31;  // Lane within warp
+  int warp_id = tid >> 5;  // Warp ID within block
+
+  Scalar local_min = INFINITY;
+  int local_idx = -1;
+
+  // Grid-stride loop for robustness with large n_clusters
+  for (int i = tid; i < n; i += blockDim.x) {
+    // Use FMA for better precision and potential performance: dist = ||c_i||² + ||e||² - 2*dot[i]
+    Scalar dist = fma(Scalar(-2.0), dots[i], c_norms[i] + e_norm);
+    if (dist < local_min) {
+      local_min = dist;
+      local_idx = i;
+    }
+  }
+
+  // Warp reduction using shuffle operations
+  for (int offset = 16; offset > 0; offset >>= 1) {
+    Scalar other_dist = __shfl_down_sync(0xffffffff, local_min, offset);
+    int other_idx = __shfl_down_sync(0xffffffff, local_idx, offset);
+    if (other_dist < local_min) {
+      local_min = other_dist;
+      local_idx = other_idx;
+    }
+  }
+
+  // First lane of each warp writes to shared memory
+  if (lane == 0) {
+    s_min_dist[warp_id] = local_min;
+    s_min_idx[warp_id] = local_idx;
+  }
+  __syncthreads();
+
+  // First warp reduces across warps
+  if (warp_id == 0) {
+    int num_warps = (blockDim.x + 31) >> 5;
+    local_min = (lane < num_warps) ? s_min_dist[lane] : INFINITY;
+    local_idx = (lane < num_warps) ? s_min_idx[lane] : -1;
+
+    for (int offset = 16; offset > 0; offset >>= 1) {
+      Scalar other_dist = __shfl_down_sync(0xffffffff, local_min, offset);
+      int other_idx = __shfl_down_sync(0xffffffff, local_idx, offset);
+      if (other_dist < local_min) {
+        local_min = other_dist;
+        local_idx = other_idx;
+      }
+    }
+
+    // First thread writes final result
+    if (lane == 0) {
+      *best_idx = local_idx;
+      *best_dist = sqrt(max(local_min, Scalar(0)));
+    }
   }
 }
 
@@ -89,9 +143,13 @@ void CudaClusterBackendT<float>::free_device_memory() {
     cudaFree(d_dots_);
     d_dots_ = nullptr;
   }
-  if (d_distances_) {
-    cudaFree(d_distances_);
-    d_distances_ = nullptr;
+  if (d_best_idx_) {
+    cudaFree(d_best_idx_);
+    d_best_idx_ = nullptr;
+  }
+  if (d_best_dist_) {
+    cudaFree(d_best_dist_);
+    d_best_dist_ = nullptr;
   }
 }
 
@@ -132,10 +190,11 @@ void CudaClusterBackendT<float>::load_centroids(const float* data, int n_cluster
   CUDA_CHECK(cudaMalloc(&d_centroid_norms_, n_clusters_sz * sizeof(float)));
   CUDA_CHECK(cudaMalloc(&d_embedding_, dim_sz * sizeof(float)));
   CUDA_CHECK(cudaMalloc(&d_dots_, n_clusters_sz * sizeof(float)));
-  CUDA_CHECK(cudaMalloc(&d_distances_, n_clusters_sz * sizeof(float)));
+  CUDA_CHECK(cudaMalloc(&d_best_idx_, sizeof(int)));
+  CUDA_CHECK(cudaMalloc(&d_best_dist_, sizeof(float)));
 
-  // Convert row-major [K][D] to column-major [D][K] for cuBLAS
-  std::vector<float> centroids_col_major = to_col_major(data, n_clusters_sz, dim_sz);
+   // Row-major [K][D] is mathematically equivalent to column-major [D][K] when interpreted as transpose
+   std::vector<float> centroids_col_major = to_col_major(data, n_clusters_sz, dim_sz);
 
   // Compute centroid norms: ||c_i||²
   std::vector<float> centroid_norms = compute_norms(data, n_clusters_sz, dim_sz);
@@ -174,30 +233,27 @@ std::pair<int, float> CudaClusterBackendT<float>::assign(const float* embedding,
                            d_embedding_, 1,               // x, incx
                            &beta, d_dots_, 1));           // y, incy
 
-  // 4. Epilogue kernel: dist²[i] = ||c_i||² + ||e||² - 2*dot[i]
-  constexpr int kBlockSize = 256;
-  const unsigned int grid_size = static_cast<unsigned int>(
-      (n_clusters_ + kBlockSize - 1) / kBlockSize);
-   epilogue_kernel<float><<<grid_size, kBlockSize, 0, stream_>>>(
-       d_centroid_norms_, embed_norm, d_dots_, d_distances_, n_clusters_);
+  // 4. Fused kernel: compute distances and find argmin in single kernel
+  constexpr int kBlockSize = 256;  // Good for small n_clusters (20-50)
+  fused_distance_argmin_kernel<float><<<1, kBlockSize, 0, stream_>>>(
+      d_centroid_norms_, embed_norm, d_dots_, n_clusters_,
+      d_best_idx_, d_best_dist_);
 
-   // Check for kernel launch errors
-   CUDA_CHECK(cudaGetLastError());
+  // Check for kernel launch errors
+  CUDA_CHECK(cudaGetLastError());
 
-   // 5. Argmin using Thrust on the same stream
-   thrust::device_ptr<float> ptr(d_distances_);
-   auto min_it = thrust::min_element(thrust::cuda::par.on(stream_), ptr, ptr + n_clusters_);
+  // 5. Copy results back to host
+  int host_best_idx;
+  float host_best_dist;
+  CUDA_CHECK(cudaMemcpyAsync(&host_best_idx, d_best_idx_, sizeof(int),
+                            cudaMemcpyDeviceToHost, stream_));
+  CUDA_CHECK(cudaMemcpyAsync(&host_best_dist, d_best_dist_, sizeof(float),
+                            cudaMemcpyDeviceToHost, stream_));
 
-   // Explicitly copy the minimum value from device to host
-   float host_min_value;
-   thrust::copy(thrust::cuda::par.on(stream_), min_it, min_it + 1, &host_min_value);
+  // 6. Synchronize to ensure copies complete
+  CUDA_CHECK(cudaStreamSynchronize(stream_));
 
-   // 6. Synchronize to ensure Thrust completes before reading result
-   CUDA_CHECK(cudaStreamSynchronize(stream_));
-  int best = static_cast<int>(min_it - ptr);
-  float best_dist = std::sqrt(std::max(host_min_value, 0.0f));
-
-  return {best, best_dist};
+  return {host_best_idx, host_best_dist};
 }
 
 // Template specialization for double - free_device_memory must come first (called by destructor)
@@ -219,9 +275,13 @@ void CudaClusterBackendT<double>::free_device_memory() {
     cudaFree(d_dots_);
     d_dots_ = nullptr;
   }
-  if (d_distances_) {
-    cudaFree(d_distances_);
-    d_distances_ = nullptr;
+  if (d_best_idx_) {
+    cudaFree(d_best_idx_);
+    d_best_idx_ = nullptr;
+  }
+  if (d_best_dist_) {
+    cudaFree(d_best_dist_);
+    d_best_dist_ = nullptr;
   }
 }
 
@@ -262,10 +322,11 @@ void CudaClusterBackendT<double>::load_centroids(const double* data, int n_clust
   CUDA_CHECK(cudaMalloc(&d_centroid_norms_, n_clusters_sz * sizeof(double)));
   CUDA_CHECK(cudaMalloc(&d_embedding_, dim_sz * sizeof(double)));
   CUDA_CHECK(cudaMalloc(&d_dots_, n_clusters_sz * sizeof(double)));
-  CUDA_CHECK(cudaMalloc(&d_distances_, n_clusters_sz * sizeof(double)));
+  CUDA_CHECK(cudaMalloc(&d_best_idx_, sizeof(int)));
+  CUDA_CHECK(cudaMalloc(&d_best_dist_, sizeof(double)));
 
-  // Convert row-major [K][D] to column-major [D][K] for cuBLAS
-  std::vector<double> centroids_col_major = to_col_major(data, n_clusters_sz, dim_sz);
+   // Row-major [K][D] is mathematically equivalent to column-major [D][K] when interpreted as transpose
+   std::vector<double> centroids_col_major = to_col_major(data, n_clusters_sz, dim_sz);
 
   // Compute centroid norms: ||c_i||²
   std::vector<double> centroid_norms = compute_norms(data, n_clusters_sz, dim_sz);
@@ -302,30 +363,27 @@ std::pair<int, double> CudaClusterBackendT<double>::assign(const double* embeddi
                            d_embedding_, 1,               // x, incx
                            &beta, d_dots_, 1));           // y, incy
 
-  // 4. Epilogue kernel: dist²[i] = ||c_i||² + ||e||² - 2*dot[i]
-  constexpr int kBlockSize = 256;
-  const unsigned int grid_size = static_cast<unsigned int>(
-      (n_clusters_ + kBlockSize - 1) / kBlockSize);
-   epilogue_kernel<double><<<grid_size, kBlockSize, 0, stream_>>>(
-       d_centroid_norms_, embed_norm, d_dots_, d_distances_, n_clusters_);
+  // 4. Fused kernel: compute distances and find argmin in single kernel
+  constexpr int kBlockSize = 256;  // Good for small n_clusters (20-50)
+  fused_distance_argmin_kernel<double><<<1, kBlockSize, 0, stream_>>>(
+      d_centroid_norms_, embed_norm, d_dots_, n_clusters_,
+      d_best_idx_, d_best_dist_);
 
-   // Check for kernel launch errors
-   CUDA_CHECK(cudaGetLastError());
+  // Check for kernel launch errors
+  CUDA_CHECK(cudaGetLastError());
 
-   // 5. Argmin using Thrust on the same stream
-   thrust::device_ptr<double> ptr(d_distances_);
-   auto min_it = thrust::min_element(thrust::cuda::par.on(stream_), ptr, ptr + n_clusters_);
+  // 5. Copy results back to host
+  int host_best_idx;
+  double host_best_dist;
+  CUDA_CHECK(cudaMemcpyAsync(&host_best_idx, d_best_idx_, sizeof(int),
+                            cudaMemcpyDeviceToHost, stream_));
+  CUDA_CHECK(cudaMemcpyAsync(&host_best_dist, d_best_dist_, sizeof(double),
+                            cudaMemcpyDeviceToHost, stream_));
 
-   // Explicitly copy the minimum value from device to host
-   double host_min_value;
-   thrust::copy(thrust::cuda::par.on(stream_), min_it, min_it + 1, &host_min_value);
+  // 6. Synchronize to ensure copies complete
+  CUDA_CHECK(cudaStreamSynchronize(stream_));
 
-   // 6. Synchronize to ensure Thrust completes before reading result
-   CUDA_CHECK(cudaStreamSynchronize(stream_));
-  int best = static_cast<int>(min_it - ptr);
-  double best_dist = std::sqrt(std::max(host_min_value, 0.0));
-
-  return {best, best_dist};
+  return {host_best_idx, host_best_dist};
 }
 
 #endif  // ADAPTIVE_HAS_CUDA

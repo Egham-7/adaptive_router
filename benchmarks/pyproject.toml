@@ -1,0 +1,77 @@
+[build-system]
+requires = ["uv_build>=0.9.16,<0.10.0"]
+build-backend = "uv_build"
+
+[project]
+name = "adaptive-router-benchmarks"
+version = "0.1.0"
+description = "Benchmarking suite for adaptive router with on-device AI workloads"
+authors = [{ name = "Botir Khaltaev", email = "botirkhaltaev@llmadaptive.uk" }]
+requires-python = ">=3.11,<4.0"
+readme = "README.md"
+license = "MIT"
+keywords = ["benchmarks", "llm", "on-device", "mobile-ai", "evaluation"]
+
+dependencies = [
+  # LLM APIs
+  "anthropic>=0.42.0,<1",
+  # Embeddings fallback (x86 only - Mac uses Cactus C bindings)
+  "sentence-transformers>=2.7.0,<3",
+  # Data handling
+  "datasets>=4.4.1",
+  "polars>=1.35.2",
+  "pandas>=2.0.0",
+  "numpy>=1.24.0",
+  # Visualization
+  "matplotlib>=3.7.0",
+  "seaborn>=0.12.0",
+  "plotly>=5.14.0",
+  # Utilities
+  "tqdm>=4.65.0",
+  "rich>=13.0.0",
+]
+
+[project.urls]
+Homepage = "https://llmadaptive.uk"
+Repository = "https://github.com/Egham-7/adaptive"
+Documentation = "https://docs.llmadaptive.uk"
+
+[project.scripts]
+benchmark-cactus = "adaptive_router_benchmarks.cli:main"
+
+
+[dependency-groups]
+dev = [
+  "pytest>=8.4.1,<9",
+  "pytest-cov>=6.2.1,<8",
+  "ruff>=0.11.11,<0.14",
+  "mypy>=1.15.0,<2",
+]
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+
+[tool.mypy]
+exclude = ["tests/"]
+no_implicit_optional = true
+warn_return_any = false
+warn_unused_ignores = true
+
+[[tool.mypy.overrides]]
+module = [
+  "anthropic.*",
+  "matplotlib.*",
+  "seaborn.*",
+  "plotly.*",
+  "datasets.*",
+  "polars.*",
+  "pandas.*",
+  "tqdm.*",
+  "rich.*",
+]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+addopts = "-v --strict-markers"
+testpaths = ["tests"]

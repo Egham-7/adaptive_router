@@ -36,6 +36,8 @@ dependencies = [
   "deepeval>=3.7.0",
   "einops>=0.8.1",
   "msgpack>=1.1.2,<2",
+  # ML Framework (required by sentence-transformers/transformers)
+  "torch>=2.9.1",
 ]
 
 

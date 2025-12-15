@@ -55,7 +55,7 @@ NB_MODULE(adaptive_core_ext, m) {
       // Route - float32 version (most common case)
       .def(
           "route",
-          [](Router& self, nb::ndarray<float, nb::ndim<1>, nb::c_contig> embedding, float cost_bias, nb::stl::vector<std::string> models) {
+          [](Router& self, nb::ndarray<float, nb::ndim<1>, nb::c_contig> embedding, float cost_bias, std::vector<std::string> models) {
             if (embedding.shape(0) != static_cast<size_t>(self.get_embedding_dim())) {
               throw std::invalid_argument(
                   "Embedding dimension mismatch: expected " +
@@ -64,13 +64,13 @@ NB_MODULE(adaptive_core_ext, m) {
             }
             return self.route(embedding.data(), embedding.shape(0), cost_bias, models);
           },
-          "embedding"_a, "cost_bias"_a = 0.5f, "models"_a = nb::stl::vector<std::string>{},
+          "embedding"_a, "cost_bias"_a = 0.5f, "models"_a = std::vector<std::string>{},
           "Route using pre-computed embedding vector (float32 numpy array)")
 
       // Route - float64 version
       .def(
           "route",
-          [](Router& self, nb::ndarray<double, nb::ndim<1>, nb::c_contig> embedding, float cost_bias, nb::stl::vector<std::string> models) {
+          [](Router& self, nb::ndarray<double, nb::ndim<1>, nb::c_contig> embedding, float cost_bias, std::vector<std::string> models) {
             if (embedding.shape(0) != static_cast<size_t>(self.get_embedding_dim())) {
               throw std::invalid_argument(
                   "Embedding dimension mismatch: expected " +
@@ -79,13 +79,13 @@ NB_MODULE(adaptive_core_ext, m) {
             }
             return self.route(embedding.data(), embedding.shape(0), cost_bias, models);
           },
-          "embedding"_a, "cost_bias"_a = 0.5f, "models"_a = nb::stl::vector<std::string>{},
+          "embedding"_a, "cost_bias"_a = 0.5f, "models"_a = std::vector<std::string>{},
           "Route using pre-computed embedding vector (float64 numpy array)")
 
       // Batch route - float32 version
       .def(
           "route_batch",
-          [](Router& self, nb::ndarray<float, nb::ndim<2>, nb::c_contig> embeddings, float cost_bias, nb::stl::vector<std::string> models) {
+          [](Router& self, nb::ndarray<float, nb::ndim<2>, nb::c_contig> embeddings, float cost_bias, std::vector<std::string> models) {
             size_t n_embeddings = embeddings.shape(0);
             size_t embedding_dim = embeddings.shape(1);
 
@@ -106,13 +106,13 @@ NB_MODULE(adaptive_core_ext, m) {
 
             return results;
           },
-          "embeddings"_a, "cost_bias"_a = 0.5f, "models"_a = nb::stl::vector<std::string>{},
+          "embeddings"_a, "cost_bias"_a = 0.5f, "models"_a = std::vector<std::string>{},
           "Batch route multiple embeddings (N×D float32 numpy array)")
 
       // Batch route - float64 version
       .def(
           "route_batch",
-          [](Router& self, nb::ndarray<double, nb::ndim<2>, nb::c_contig> embeddings, float cost_bias, nb::stl::vector<std::string> models) {
+          [](Router& self, nb::ndarray<double, nb::ndim<2>, nb::c_contig> embeddings, float cost_bias, std::vector<std::string> models) {
             size_t n_embeddings = embeddings.shape(0);
             size_t embedding_dim = embeddings.shape(1);
 
@@ -133,7 +133,7 @@ NB_MODULE(adaptive_core_ext, m) {
 
             return results;
           },
-          "embeddings"_a, "cost_bias"_a = 0.5f, "models"_a = nb::stl::vector<std::string>{},
+          "embeddings"_a, "cost_bias"_a = 0.5f, "models"_a = std::vector<std::string>{},
           "Batch route multiple embeddings (N×D float64 numpy array)")
 
       // Introspection

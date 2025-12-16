@@ -84,6 +84,7 @@ class ModelRouter:
         self._embedding_model = embedding_model
         self._metadata = profile_metadata
         self.default_cost_preference = profile_metadata.routing.default_cost_preference
+        self._dtype = profile_metadata.dtype
 
     @classmethod
     def from_json_file(cls, path: str | Path) -> ModelRouter:
@@ -293,6 +294,13 @@ class ModelRouter:
             request.prompt,
             convert_to_numpy=True,
         )
+        
+        # Ensure embedding dtype matches router dtype (from profile)
+        import numpy as np
+        if self._dtype == 'float64' and embedding.dtype != np.float64:
+            embedding = embedding.astype(np.float64)
+        elif self._dtype == 'float32' and embedding.dtype != np.float32:
+            embedding = embedding.astype(np.float32)
 
         # 2. Resolve cost preference
         cost_preference = self._resolve_cost_preference(cost_bias, request.cost_bias)
@@ -342,12 +350,18 @@ class ModelRouter:
         """Get list of models this router supports."""
         return self._core_router.get_supported_models()
 
+    @property
+    def dtype(self) -> str:
+        """Get the numeric dtype used by this router (from profile)."""
+        return self._dtype
+
     def get_cluster_info(self) -> dict[str, Any]:
         """Get information about loaded clusters."""
         return {
             "n_clusters": self._core_router.get_n_clusters(),
             "embedding_dim": self._core_router.get_embedding_dim(),
             "embedding_model": self._metadata.embedding_model,
+            "dtype": self._dtype,
             "supported_models": self.get_supported_models(),
             "default_cost_preference": self.default_cost_preference,
         }

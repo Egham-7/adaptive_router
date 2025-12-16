@@ -45,6 +45,7 @@ void from_json(const json& json_obj, ModelFeatures& features) {
 void from_json(const json& json_obj, ProfileMetadata& meta) {
   json_obj.at("n_clusters").get_to(meta.n_clusters);
   json_obj.at("embedding_model").get_to(meta.embedding_model);
+  meta.dtype = json_obj.value("dtype", "float32");  // Default float32 for backwards compat
   meta.silhouette_score = json_obj.value("silhouette_score", 0.0f);
 
   if (json_obj.contains("clustering")) {
@@ -71,6 +72,9 @@ RouterProfile RouterProfile::from_json_string(const std::string& json_str) {
   json profile_json = json::parse(json_str);  // Let parse_error propagate naturally
 
   RouterProfile profile;
+
+  // Parse metadata first to get dtype
+  profile.metadata = profile_json.at("metadata").get<ProfileMetadata>();
 
   // Parse cluster centers
   const auto& centers_json = profile_json.at("cluster_centers");
@@ -103,26 +107,39 @@ RouterProfile RouterProfile::from_json_string(const std::string& json_str) {
   auto n_clusters_u = static_cast<std::size_t>(n_clusters);
   auto feature_dim_u = static_cast<std::size_t>(feature_dim);
 
-  profile.cluster_centers.resize(n_clusters, feature_dim);
-
-  // Parse cluster centers using ranges
-  for (auto cluster_idx : std::views::iota(std::size_t{0}, n_clusters_u)) {
-    const auto& center = centers_data[cluster_idx];
-
-    if (!center.is_array() || center.size() != feature_dim_u) {
-      throw std::invalid_argument(
-        std::format("Invalid cluster center at index {}: expected {} dimensions, got {}", cluster_idx, feature_dim, center.size())
-      );
+  // Parse cluster centers based on dtype
+  if (profile.metadata.dtype == "float64") {
+    EmbeddingMatrixT<double> centers(n_clusters, feature_dim);
+    for (auto cluster_idx : std::views::iota(std::size_t{0}, n_clusters_u)) {
+      const auto& center = centers_data[cluster_idx];
+      if (!center.is_array() || center.size() != feature_dim_u) {
+        throw std::invalid_argument(
+          std::format("Invalid cluster center at index {}: expected {} dimensions, got {}", cluster_idx, feature_dim, center.size())
+        );
+      }
+      for (auto col : std::views::iota(std::size_t{0}, feature_dim_u)) {
+        centers(static_cast<Eigen::Index>(cluster_idx), static_cast<Eigen::Index>(col)) = center[col].get<double>();
+      }
     }
-
-    for (auto col : std::views::iota(std::size_t{0}, feature_dim_u)) {
-      profile.cluster_centers(static_cast<Eigen::Index>(cluster_idx), static_cast<Eigen::Index>(col)) = center[col].get<float>();
+    profile.cluster_centers = std::move(centers);
+  } else {
+    EmbeddingMatrixT<float> centers(n_clusters, feature_dim);
+    for (auto cluster_idx : std::views::iota(std::size_t{0}, n_clusters_u)) {
+      const auto& center = centers_data[cluster_idx];
+      if (!center.is_array() || center.size() != feature_dim_u) {
+        throw std::invalid_argument(
+          std::format("Invalid cluster center at index {}: expected {} dimensions, got {}", cluster_idx, feature_dim, center.size())
+        );
+      }
+      for (auto col : std::views::iota(std::size_t{0}, feature_dim_u)) {
+        centers(static_cast<Eigen::Index>(cluster_idx), static_cast<Eigen::Index>(col)) = center[col].get<float>();
+      }
     }
+    profile.cluster_centers = std::move(centers);
   }
 
-  // Parse models and metadata (automatic via from_json)
+  // Parse models
   profile.models = profile_json.at("models").get<std::vector<ModelFeatures>>();
-  profile.metadata = profile_json.at("metadata").get<ProfileMetadata>();
 
   return profile;
 }
@@ -138,6 +155,32 @@ RouterProfile RouterProfile::from_binary(const std::string& path) {
   auto map = handle.get().as<std::map<std::string, msgpack::object>>();
 
   RouterProfile profile;
+
+  // Parse metadata first to get dtype
+  auto meta = map.at("metadata").as<std::map<std::string, msgpack::object>>();
+  profile.metadata.n_clusters = meta.at("n_clusters").as<int>();
+  profile.metadata.embedding_model = meta.at("embedding_model").as<std::string>();
+  profile.metadata.dtype = meta.contains("dtype") ? meta.at("dtype").as<std::string>() : "float32";
+  profile.metadata.silhouette_score = meta.contains("silhouette_score") ? meta.at("silhouette_score").as<float>() : 0.0f;
+
+  // Parse optional clustering config
+  if (meta.contains("clustering")) {
+    auto clustering_map = meta.at("clustering").as<std::map<std::string, msgpack::object>>();
+    if (clustering_map.contains("max_iter")) profile.metadata.clustering.max_iter = clustering_map.at("max_iter").as<int>();
+    if (clustering_map.contains("random_state")) profile.metadata.clustering.random_state = clustering_map.at("random_state").as<int>();
+    if (clustering_map.contains("n_init")) profile.metadata.clustering.n_init = clustering_map.at("n_init").as<int>();
+    if (clustering_map.contains("algorithm")) profile.metadata.clustering.algorithm = clustering_map.at("algorithm").as<std::string>();
+    if (clustering_map.contains("normalization_strategy")) profile.metadata.clustering.normalization_strategy = clustering_map.at("normalization_strategy").as<std::string>();
+  }
+
+  // Parse optional routing config
+  if (meta.contains("routing")) {
+    auto routing_map = meta.at("routing").as<std::map<std::string, msgpack::object>>();
+    if (routing_map.contains("lambda_min")) profile.metadata.routing.lambda_min = routing_map.at("lambda_min").as<float>();
+    if (routing_map.contains("lambda_max")) profile.metadata.routing.lambda_max = routing_map.at("lambda_max").as<float>();
+    if (routing_map.contains("default_cost_preference")) profile.metadata.routing.default_cost_preference = routing_map.at("default_cost_preference").as<float>();
+    if (routing_map.contains("max_alternatives")) profile.metadata.routing.max_alternatives = routing_map.at("max_alternatives").as<int>();
+  }
 
   // Parse cluster centers
   auto centers_map = map.at("cluster_centers").as<std::map<std::string, msgpack::object>>();
@@ -161,19 +204,36 @@ RouterProfile RouterProfile::from_binary(const std::string& path) {
     );
   }
 
-  size_t expected_size = total_elements * sizeof(float);
-  if (centers_bytes.size() != expected_size) {
-    throw std::invalid_argument(
-      std::format("cluster_centers data size mismatch: expected {} bytes, got {}", expected_size, centers_bytes.size())
+  // Parse cluster centers based on dtype
+  if (profile.metadata.dtype == "float64") {
+    size_t expected_size = total_elements * sizeof(double);
+    if (centers_bytes.size() != expected_size) {
+      throw std::invalid_argument(
+        std::format("cluster_centers data size mismatch: expected {} bytes (float64), got {}", expected_size, centers_bytes.size())
+      );
+    }
+    EmbeddingMatrixT<double> centers(n_clusters, feature_dim);
+    std::memcpy(
+      centers.data(),
+      centers_bytes.data(),
+      static_cast<size_t>(total_elements) * sizeof(double)
     );
+    profile.cluster_centers = std::move(centers);
+  } else {
+    size_t expected_size = total_elements * sizeof(float);
+    if (centers_bytes.size() != expected_size) {
+      throw std::invalid_argument(
+        std::format("cluster_centers data size mismatch: expected {} bytes (float32), got {}", expected_size, centers_bytes.size())
+      );
+    }
+    EmbeddingMatrixT<float> centers(n_clusters, feature_dim);
+    std::memcpy(
+      centers.data(),
+      centers_bytes.data(),
+      static_cast<size_t>(total_elements) * sizeof(float)
+    );
+    profile.cluster_centers = std::move(centers);
   }
-
-  profile.cluster_centers.resize(n_clusters, feature_dim);
-  std::memcpy(
-    profile.cluster_centers.data(),
-    centers_bytes.data(),
-    static_cast<size_t>(total_elements) * sizeof(float)
-  );
 
   // Parse models
   auto models_arr = map.at("models").as<std::vector<msgpack::object>>();
@@ -190,31 +250,6 @@ RouterProfile RouterProfile::from_binary(const std::string& path) {
     model.cost_per_1m_output_tokens = model_map.at("cost_per_1m_output_tokens").as<float>();
     model.error_rates = model_map.at("error_rates").as<std::vector<float>>();
     profile.models.push_back(std::move(model));
-  }
-
-  // Parse metadata
-  auto meta = map.at("metadata").as<std::map<std::string, msgpack::object>>();
-  profile.metadata.n_clusters = meta.at("n_clusters").as<int>();
-  profile.metadata.embedding_model = meta.at("embedding_model").as<std::string>();
-  profile.metadata.silhouette_score = meta.contains("silhouette_score") ? meta.at("silhouette_score").as<float>() : 0.0f;
-
-  // Parse optional clustering config
-  if (meta.contains("clustering")) {
-    auto clustering_map = meta.at("clustering").as<std::map<std::string, msgpack::object>>();
-    if (clustering_map.contains("max_iter")) profile.metadata.clustering.max_iter = clustering_map.at("max_iter").as<int>();
-    if (clustering_map.contains("random_state")) profile.metadata.clustering.random_state = clustering_map.at("random_state").as<int>();
-    if (clustering_map.contains("n_init")) profile.metadata.clustering.n_init = clustering_map.at("n_init").as<int>();
-    if (clustering_map.contains("algorithm")) profile.metadata.clustering.algorithm = clustering_map.at("algorithm").as<std::string>();
-    if (clustering_map.contains("normalization_strategy")) profile.metadata.clustering.normalization_strategy = clustering_map.at("normalization_strategy").as<std::string>();
-  }
-
-  // Parse optional routing config
-  if (meta.contains("routing")) {
-    auto routing_map = meta.at("routing").as<std::map<std::string, msgpack::object>>();
-    if (routing_map.contains("lambda_min")) profile.metadata.routing.lambda_min = routing_map.at("lambda_min").as<float>();
-    if (routing_map.contains("lambda_max")) profile.metadata.routing.lambda_max = routing_map.at("lambda_max").as<float>();
-    if (routing_map.contains("default_cost_preference")) profile.metadata.routing.default_cost_preference = routing_map.at("default_cost_preference").as<float>();
-    if (routing_map.contains("max_alternatives")) profile.metadata.routing.max_alternatives = routing_map.at("max_alternatives").as<int>();
   }
 
   return profile;

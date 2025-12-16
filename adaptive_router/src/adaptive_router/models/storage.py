@@ -101,6 +101,7 @@ class ProfileMetadata(BaseModel):
     Attributes:
         n_clusters: Number of clusters (K in K-means)
         embedding_model: HuggingFace embedding model name
+        dtype: Numeric dtype for cluster centers ("float32" or "float64")
         silhouette_score: Cluster quality metric (-1 to 1, higher is better)
         allow_trust_remote_code: Allow remote code execution for embedding models
         clustering: K-means clustering configuration
@@ -110,6 +111,9 @@ class ProfileMetadata(BaseModel):
     # Core clustering parameters
     n_clusters: int = Field(..., gt=0, description="Number of clusters")
     embedding_model: str = Field(..., description="Embedding model name")
+    dtype: str = Field(
+        default="float32", description="Numeric dtype for cluster centers (float32 or float64)"
+    )
     silhouette_score: float | None = Field(
         default=None, ge=-1.0, le=1.0, description="Cluster quality metric"
     )

@@ -354,6 +354,7 @@ class TestModelFiltering:
     @pytest.fixture
     def filtering_mock_router(self):
         """Create a mock router that tracks filtering calls."""
+
         # Make route() return different responses based on filter
         def route_side_effect(embedding, cost_bias, models=None):
             response = Mock()

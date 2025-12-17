@@ -132,7 +132,7 @@ TEST_F(CFFITest, SingleRouteReturnsValidResult) {
   std::vector<float> embedding = {0.95f, 0.05f, 0.0f, 0.0f};
 
   AdaptiveErrorCode error;
-  AdaptiveRouteResult* result = adaptive_router_route_f32(
+  AdaptiveRouteResult32* result = adaptive_router_route_f32(
       router_, embedding.data(), embedding_dim, 0.5f, &error);
 
   ASSERT_NE(result, nullptr);
@@ -145,7 +145,7 @@ TEST_F(CFFITest, SingleRouteReturnsValidResult) {
   EXPECT_GE(result->cluster_distance, 0.0f);
   EXPECT_LT(result->cluster_distance, 1.0f);
 
-  adaptive_route_result_free(result);
+  adaptive_route_result_free_f32(result);
 }
 
 TEST_F(CFFITest, SingleRouteWithDoubleReturnsValidResult) {
@@ -157,7 +157,7 @@ TEST_F(CFFITest, SingleRouteWithDoubleReturnsValidResult) {
 
   // With strict type enforcement, double routing on float32 router returns nullptr
   AdaptiveErrorCode error;
-  AdaptiveRouteResult* result = adaptive_router_route_f64(
+  AdaptiveRouteResult64* result = adaptive_router_route_f64(
       router_, embedding.data(), embedding_dim, 0.5f, &error);
 
   EXPECT_EQ(result, nullptr);
@@ -180,7 +180,7 @@ TEST_F(CFFITest, BatchRouteReturnsValidResults) {
   };
 
   AdaptiveErrorCode error;
-  AdaptiveBatchRouteResult* result = adaptive_router_route_batch_f32(
+  AdaptiveBatchRouteResult32* result = adaptive_router_route_batch_f32(
       router_, embeddings.data(), n_embeddings, embedding_dim, 0.5f, &error);
 
   ASSERT_NE(result, nullptr);
@@ -198,7 +198,7 @@ TEST_F(CFFITest, BatchRouteReturnsValidResults) {
   EXPECT_EQ(result->results[1].cluster_id, 1);
   EXPECT_EQ(result->results[2].cluster_id, 2);
 
-  adaptive_batch_route_result_free(result);
+  adaptive_batch_route_result_free_f32(result);
 }
 
 TEST_F(CFFITest, BatchRouteWithDoubleReturnsValidResults) {
@@ -212,7 +212,7 @@ TEST_F(CFFITest, BatchRouteWithDoubleReturnsValidResults) {
 
   // With strict type enforcement, double batch routing on float32 router returns nullptr
   AdaptiveErrorCode error;
-  AdaptiveBatchRouteResult* result = adaptive_router_route_batch_f64(
+  AdaptiveBatchRouteResult64* result = adaptive_router_route_batch_f64(
       router_, embeddings.data(), n_embeddings, embedding_dim, 0.5f, &error);
 
   EXPECT_EQ(result, nullptr);
@@ -247,12 +247,12 @@ TEST_F(CFFITest, RouteWithDifferentCostBiasSelectsDifferentModels) {
 
   // Route with accuracy preference (cost_bias = 0.0)
   AdaptiveErrorCode error_accuracy;
-  AdaptiveRouteResult* result_accuracy = adaptive_router_route_f32(
+  AdaptiveRouteResult32* result_accuracy = adaptive_router_route_f32(
       router_, embedding.data(), embedding_dim, 0.0f, &error_accuracy);
 
   // Route with cost preference (cost_bias = 1.0)
   AdaptiveErrorCode error_cost;
-  AdaptiveRouteResult* result_cost = adaptive_router_route_f32(
+  AdaptiveRouteResult32* result_cost = adaptive_router_route_f32(
       router_, embedding.data(), embedding_dim, 1.0f, &error_cost);
 
   ASSERT_NE(result_accuracy, nullptr);
@@ -265,8 +265,8 @@ TEST_F(CFFITest, RouteWithDifferentCostBiasSelectsDifferentModels) {
   EXPECT_NE(result_accuracy->selected_model, nullptr);
   EXPECT_NE(result_cost->selected_model, nullptr);
 
-  adaptive_route_result_free(result_accuracy);
-  adaptive_route_result_free(result_cost);
+  adaptive_route_result_free_f32(result_accuracy);
+  adaptive_route_result_free_f32(result_cost);
 }
 
 TEST_F(CFFITest, RouteWithWrongDimensionReturnsNull) {
@@ -274,7 +274,7 @@ TEST_F(CFFITest, RouteWithWrongDimensionReturnsNull) {
   std::vector<float> wrong_embedding = {1.0f, 0.0f, 0.0f};
 
   AdaptiveErrorCode error;
-  AdaptiveRouteResult* result = adaptive_router_route_f32(
+  AdaptiveRouteResult32* result = adaptive_router_route_f32(
       router_, wrong_embedding.data(), wrong_embedding.size(), 0.5f, &error);
 
   EXPECT_EQ(result, nullptr);
@@ -285,7 +285,7 @@ TEST_F(CFFITest, RouteResultHasAlternatives) {
   std::vector<float> embedding = {0.95f, 0.05f, 0.0f, 0.0f};
 
   AdaptiveErrorCode error;
-  AdaptiveRouteResult* result = adaptive_router_route_f32(
+  AdaptiveRouteResult32* result = adaptive_router_route_f32(
       router_, embedding.data(), embedding_dim, 0.5f, &error);
 
   ASSERT_NE(result, nullptr);
@@ -299,13 +299,13 @@ TEST_F(CFFITest, RouteResultHasAlternatives) {
     EXPECT_NE(result->alternatives[0], nullptr);
   }
 
-  adaptive_route_result_free(result);
+  adaptive_route_result_free_f32(result);
 }
 
 TEST_F(CFFITest, BatchRouteHandlesNullRouter) {
   std::vector<float> embeddings(384, 0.5f);
   AdaptiveErrorCode error;
-  AdaptiveBatchRouteResult* result = adaptive_router_route_batch_f32(
+  AdaptiveBatchRouteResult32* result = adaptive_router_route_batch_f32(
       nullptr, embeddings.data(), 1, 384, 0.5f, &error);
   EXPECT_EQ(result, nullptr);
 }
@@ -315,7 +315,7 @@ TEST_F(CFFITest, BatchRouteHandlesNullEmbeddings) {
 
   // Pass nullptr embeddings - should return nullptr
   AdaptiveErrorCode error;
-  AdaptiveBatchRouteResult* result = adaptive_router_route_batch_f32(
+  AdaptiveBatchRouteResult32* result = adaptive_router_route_batch_f32(
       router_, nullptr, 1, embedding_dim, 0.5f, &error);
   EXPECT_EQ(result, nullptr);
 }
@@ -324,7 +324,7 @@ TEST_F(CFFITest, RouteHandlesNullRouter) {
   std::vector<float> embedding = {1.0f, 0.0f, 0.0f, 0.0f};
 
   AdaptiveErrorCode error;
-  AdaptiveRouteResult* result = adaptive_router_route_f32(
+  AdaptiveRouteResult32* result = adaptive_router_route_f32(
       nullptr, embedding.data(), embedding.size(), 0.5f, &error);
   EXPECT_EQ(result, nullptr);
 }
@@ -356,13 +356,13 @@ TEST_F(CFFITest, StringFreeHandlesNull) {
 
 TEST_F(CFFITest, RouteResultFreeHandlesNull) {
   // Should not crash
-  adaptive_route_result_free(nullptr);
+  adaptive_route_result_free_f32(nullptr);
   EXPECT_TRUE(true);
 }
 
 TEST_F(CFFITest, BatchRouteResultFreeHandlesNull) {
   // Should not crash
-  adaptive_batch_route_result_free(nullptr);
+  adaptive_batch_route_result_free_f32(nullptr);
   EXPECT_TRUE(true);
 }
 
@@ -409,7 +409,7 @@ TEST(CFFITestPrecision, GetPrecisionHandlesNullRouter) {
 TEST_F(CFFITest, RouteDoubleOnFloat32RouterReturnsNull) {
   std::vector<double> embedding = {0.95, 0.05, 0.0, 0.0};
   AdaptiveErrorCode error;
-  AdaptiveRouteResult* result = adaptive_router_route_f64(
+  AdaptiveRouteResult64* result = adaptive_router_route_f64(
       router_, embedding.data(), embedding.size(), 0.5f, &error);
   EXPECT_EQ(result, nullptr);  // Type mismatch: can't use double on float32 router
 }
@@ -417,7 +417,7 @@ TEST_F(CFFITest, RouteDoubleOnFloat32RouterReturnsNull) {
 TEST_F(CFFITestFloat64, RouteFloatOnFloat64RouterReturnsNull) {
   std::vector<float> embedding = {0.95f, 0.05f, 0.0f, 0.0f};
   AdaptiveErrorCode error;
-  AdaptiveRouteResult* result = adaptive_router_route_f32(
+  AdaptiveRouteResult32* result = adaptive_router_route_f32(
       router_, embedding.data(), embedding.size(), 0.5f, &error);
   EXPECT_EQ(result, nullptr);  // Type mismatch: can't use float on float64 router
 }
@@ -426,14 +426,14 @@ TEST_F(CFFITestFloat64, RouteFloatOnFloat64RouterReturnsNull) {
 TEST_F(CFFITestFloat64, RouteDoubleOnFloat64RouterSucceeds) {
   std::vector<double> embedding = {0.95, 0.05, 0.0, 0.0};
   AdaptiveErrorCode error;
-  AdaptiveRouteResult* result = adaptive_router_route_f64(
+  AdaptiveRouteResult64* result = adaptive_router_route_f64(
       router_, embedding.data(), embedding.size(), 0.5f, &error);
 
   ASSERT_NE(result, nullptr);
   EXPECT_NE(result->selected_model, nullptr);
   EXPECT_EQ(result->cluster_id, 0);
 
-  adaptive_route_result_free(result);
+   adaptive_route_result_free_f64(result);
 }
 
 TEST_F(CFFITestFloat64, BatchRouteDoubleOnFloat64RouterSucceeds) {
@@ -443,21 +443,21 @@ TEST_F(CFFITestFloat64, BatchRouteDoubleOnFloat64RouterSucceeds) {
   };
 
   AdaptiveErrorCode error;
-  AdaptiveBatchRouteResult* result = adaptive_router_route_batch_f64(
+  AdaptiveBatchRouteResult64* result = adaptive_router_route_batch_f64(
       router_, embeddings.data(), 2, 4, 0.5f, &error);
 
   ASSERT_NE(result, nullptr);
   EXPECT_EQ(result->count, 2);
-  EXPECT_EQ(result->results[0].cluster_id, 0);
-  EXPECT_EQ(result->results[1].cluster_id, 2);
+   EXPECT_EQ(result->results[0].cluster_id, 0);
+   EXPECT_EQ(result->results[1].cluster_id, 2);
 
-  adaptive_batch_route_result_free(result);
+   adaptive_batch_route_result_free_f64(result);
 }
 
 TEST_F(CFFITest, BatchRouteDoubleOnFloat32RouterReturnsNull) {
   std::vector<double> embeddings = {0.95, 0.05, 0.0, 0.0};
   AdaptiveErrorCode error;
-  AdaptiveBatchRouteResult* result = adaptive_router_route_batch_f64(
+  AdaptiveBatchRouteResult64* result = adaptive_router_route_batch_f64(
       router_, embeddings.data(), 1, 4, 0.5f, &error);
   EXPECT_EQ(result, nullptr);
 }
@@ -465,7 +465,7 @@ TEST_F(CFFITest, BatchRouteDoubleOnFloat32RouterReturnsNull) {
 TEST_F(CFFITestFloat64, BatchRouteFloatOnFloat64RouterReturnsNull) {
   std::vector<float> embeddings = {0.95f, 0.05f, 0.0f, 0.0f};
   AdaptiveErrorCode error;
-  AdaptiveBatchRouteResult* result = adaptive_router_route_batch_f32(
+  AdaptiveBatchRouteResult32* result = adaptive_router_route_batch_f32(
       router_, embeddings.data(), 1, 4, 0.5f, &error);
   EXPECT_EQ(result, nullptr);
 }
@@ -493,11 +493,11 @@ TEST_F(CFFITest, RouteF32SetsErrorCodes) {
   AdaptiveErrorCode error;
 
   // Valid call should succeed
-  AdaptiveRouteResult* result = adaptive_router_route_f32(
+  AdaptiveRouteResult32* result = adaptive_router_route_f32(
       router_, embedding.data(), embedding.size(), 0.5f, &error);
   EXPECT_EQ(error, ADAPTIVE_OK);
   EXPECT_NE(result, nullptr);
-  adaptive_route_result_free(result);
+  adaptive_route_result_free_f32(result);
 
   // Null router should set error
   result = adaptive_router_route_f32(nullptr, embedding.data(), embedding.size(), 0.5f, &error);
@@ -514,7 +514,7 @@ TEST_F(CFFITest, RouteF64OnF32RouterSetsTypeMismatchError) {
   std::vector<double> embedding = {0.95, 0.05, 0.0, 0.0};
   AdaptiveErrorCode error;
 
-  AdaptiveRouteResult* result = adaptive_router_route_f64(
+  AdaptiveRouteResult64* result = adaptive_router_route_f64(
       router_, embedding.data(), embedding.size(), 0.5f, &error);
   EXPECT_EQ(error, ADAPTIVE_ERROR_TYPE_MISMATCH);
   EXPECT_EQ(result, nullptr);
@@ -524,7 +524,7 @@ TEST_F(CFFITestFloat64, RouteF32OnF64RouterSetsTypeMismatchError) {
   std::vector<float> embedding = {0.95f, 0.05f, 0.0f, 0.0f};
   AdaptiveErrorCode error;
 
-  AdaptiveRouteResult* result = adaptive_router_route_f32(
+  AdaptiveRouteResult32* result = adaptive_router_route_f32(
       router_, embedding.data(), embedding.size(), 0.5f, &error);
   EXPECT_EQ(error, ADAPTIVE_ERROR_TYPE_MISMATCH);
   EXPECT_EQ(result, nullptr);

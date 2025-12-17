@@ -25,20 +25,21 @@ static char* str_duplicate(const std::string& str) {
 }
 
 // Internal helper to clean up route result contents (but not the struct itself)
-static void cleanup_route_result_contents(AdaptiveRouteResult* result) {
-  if (!result) return;
+template<typename ResultT>
+static void cleanup_route_result_contents(ResultT* result) {
+   if (!result) return;
 
-  free(result->selected_model);
-  result->selected_model = nullptr;
+   free(result->selected_model);
+   result->selected_model = nullptr;
 
-  if (result->alternatives) {
-    // Use ranges to free alternatives
-    auto alternatives_span = std::span(result->alternatives, result->alternatives_count);
-    std::ranges::for_each(alternatives_span, [](char* str) { free(str); });
-    free(result->alternatives);
-    result->alternatives = nullptr;
-  }
-  result->alternatives_count = 0;
+   if (result->alternatives) {
+      // Use ranges to free alternatives
+      auto alternatives_span = std::span(result->alternatives, result->alternatives_count);
+      std::ranges::for_each(alternatives_span, [](char* str) { free(str); });
+      free(result->alternatives);
+      result->alternatives = nullptr;
+   }
+   result->alternatives_count = 0;
 }
 
 // Get RouterVariant pointer from opaque handle
@@ -59,11 +60,11 @@ static std::optional<RouterVariant> create_router_variant(RouterProfile profile)
   }
 }
 
-// Helper to build AdaptiveRouteResult from RouteResponseT<Scalar>
-template<typename Scalar>
-static AdaptiveRouteResult* build_route_result(const RouteResponseT<Scalar>& response) {
-  auto* result = static_cast<AdaptiveRouteResult*>(malloc(sizeof(AdaptiveRouteResult)));
-  if (!result) return nullptr;
+// Helper to build precision-specific result from RouteResponseT<Scalar>
+template<typename Scalar, typename ResultT>
+static ResultT* build_route_result(const RouteResponseT<Scalar>& response) {
+   auto* result = static_cast<ResultT*>(malloc(sizeof(ResultT)));
+   if (!result) return nullptr;
 
   result->selected_model = str_duplicate(response.selected_model);
   if (!result->selected_model) {
@@ -143,9 +144,9 @@ void adaptive_router_destroy(AdaptiveRouter* router) {
   delete get_router(router);
 }
 
-AdaptiveRouteResult* adaptive_router_route_f32(AdaptiveRouter* router, const float* embedding,
-                                                   size_t embedding_size, float cost_bias,
-                                                   AdaptiveErrorCode* error_out) {
+AdaptiveRouteResult32* adaptive_router_route_f32(AdaptiveRouter* router, const float* embedding,
+                                                      size_t embedding_size, float cost_bias,
+                                                      AdaptiveErrorCode* error_out) {
   if (error_out) *error_out = ADAPTIVE_OK;
 
   if (!router) {
@@ -168,7 +169,7 @@ AdaptiveRouteResult* adaptive_router_route_f32(AdaptiveRouter* router, const flo
 
     auto& r = std::get<RouterT<float>>(*var);
     auto response = r.route(embedding, embedding_size, cost_bias);
-    return build_route_result(response);
+    return build_route_result<float, AdaptiveRouteResult32>(response);
   } catch (...) {
     if (error_out) *error_out = ADAPTIVE_ERROR_INTERNAL;
     return nullptr;
@@ -177,15 +178,21 @@ AdaptiveRouteResult* adaptive_router_route_f32(AdaptiveRouter* router, const flo
 
 
 
-void adaptive_route_result_free(AdaptiveRouteResult* result) {
-  if (!result) return;
-  cleanup_route_result_contents(result);
-  free(result);
+void adaptive_route_result_free_f32(AdaptiveRouteResult32* result) {
+   if (!result) return;
+   cleanup_route_result_contents(result);
+   free(result);
 }
 
-AdaptiveRouteResult* adaptive_router_route_f64(AdaptiveRouter* router, const double* embedding,
-                                                   size_t embedding_size, float cost_bias,
-                                                   AdaptiveErrorCode* error_out) {
+void adaptive_route_result_free_f64(AdaptiveRouteResult64* result) {
+   if (!result) return;
+   cleanup_route_result_contents(result);
+   free(result);
+}
+
+AdaptiveRouteResult64* adaptive_router_route_f64(AdaptiveRouter* router, const double* embedding,
+                                                     size_t embedding_size, float cost_bias,
+                                                     AdaptiveErrorCode* error_out) {
   if (error_out) *error_out = ADAPTIVE_OK;
 
   if (!router) {
@@ -208,14 +215,14 @@ AdaptiveRouteResult* adaptive_router_route_f64(AdaptiveRouter* router, const dou
 
     auto& r = std::get<RouterT<double>>(*var);
     auto response = r.route(embedding, embedding_size, cost_bias);
-    return build_route_result(response);
+    return build_route_result<double, AdaptiveRouteResult64>(response);
   } catch (...) {
     if (error_out) *error_out = ADAPTIVE_ERROR_INTERNAL;
     return nullptr;
   }
 }
 
-AdaptiveBatchRouteResult* adaptive_router_route_batch_f32(
+AdaptiveBatchRouteResult32* adaptive_router_route_batch_f32(
     AdaptiveRouter* router,
     const float* embeddings,
     size_t n_embeddings,
@@ -223,38 +230,38 @@ AdaptiveBatchRouteResult* adaptive_router_route_batch_f32(
     float cost_bias,
     AdaptiveErrorCode* error_out) {
 
-  if (error_out) *error_out = ADAPTIVE_OK;
+   if (error_out) *error_out = ADAPTIVE_OK;
 
-  if (!router) {
-    if (error_out) *error_out = ADAPTIVE_ERROR_NULL_ROUTER;
-    return nullptr;
-  }
-  if (!embeddings) {
-    if (error_out) *error_out = ADAPTIVE_ERROR_NULL_EMBEDDING;
-    return nullptr;
-  }
+   if (!router) {
+     if (error_out) *error_out = ADAPTIVE_ERROR_NULL_ROUTER;
+     return nullptr;
+   }
+   if (!embeddings) {
+     if (error_out) *error_out = ADAPTIVE_ERROR_NULL_EMBEDDING;
+     return nullptr;
+   }
 
-  try {
-    auto* batch_result = static_cast<AdaptiveBatchRouteResult*>(malloc(sizeof(AdaptiveBatchRouteResult)));
-    if (!batch_result) {
-      return nullptr;
-    }
+   try {
+     auto* batch_result = static_cast<AdaptiveBatchRouteResult32*>(malloc(sizeof(AdaptiveBatchRouteResult32)));
+     if (!batch_result) {
+       return nullptr;
+     }
 
-    batch_result->count = n_embeddings;
-    batch_result->results = nullptr;
+     batch_result->count = n_embeddings;
+     batch_result->results = nullptr;
 
-    if (n_embeddings == 0) {
-      return batch_result;
-    }
+     if (n_embeddings == 0) {
+       return batch_result;
+     }
 
-    batch_result->results = static_cast<AdaptiveRouteResult*>(malloc(sizeof(AdaptiveRouteResult) * n_embeddings));
-    if (!batch_result->results) {
-      free(batch_result);
-      return nullptr;
-    }
+     batch_result->results = static_cast<AdaptiveRouteResult32*>(malloc(sizeof(AdaptiveRouteResult32) * n_embeddings));
+     if (!batch_result->results) {
+       free(batch_result);
+       return nullptr;
+     }
 
-    // Initialize all results to zero
-    std::fill_n(batch_result->results, n_embeddings, AdaptiveRouteResult{});
+     // Initialize all results to zero
+     std::fill_n(batch_result->results, n_embeddings, AdaptiveRouteResult32{});
 
     // Route each embedding
     for (size_t result_idx = 0; result_idx < n_embeddings; ++result_idx) {
@@ -286,26 +293,45 @@ AdaptiveBatchRouteResult* adaptive_router_route_batch_f32(
   }
 }
 
-void adaptive_batch_route_result_free(AdaptiveBatchRouteResult* result) {
-  if (!result) return;
+void adaptive_batch_route_result_free_f32(AdaptiveBatchRouteResult32* result) {
+   if (!result) return;
 
-  if (result->results) {
-    // Free each individual result's data using ranges
-    auto results_span = std::span(result->results, result->count);
-    std::ranges::for_each(results_span, [](AdaptiveRouteResult& res) {
-      free(res.selected_model);
-      if (res.alternatives) {
-        auto alternatives_span = std::span(res.alternatives, res.alternatives_count);
-        std::ranges::for_each(alternatives_span, [](char* str) { free(str); });
-        free(res.alternatives);
-      }
-    });
-    free(result->results);
-  }
-  free(result);
+   if (result->results) {
+      // Free each individual result's data using ranges
+      auto results_span = std::span(result->results, result->count);
+      std::ranges::for_each(results_span, [](AdaptiveRouteResult32& res) {
+         free(res.selected_model);
+         if (res.alternatives) {
+            auto alternatives_span = std::span(res.alternatives, res.alternatives_count);
+            std::ranges::for_each(alternatives_span, [](char* str) { free(str); });
+            free(res.alternatives);
+         }
+      });
+      free(result->results);
+   }
+   free(result);
 }
 
-AdaptiveBatchRouteResult* adaptive_router_route_batch_f64(
+void adaptive_batch_route_result_free_f64(AdaptiveBatchRouteResult64* result) {
+   if (!result) return;
+
+   if (result->results) {
+      // Free each individual result's data using ranges
+      auto results_span = std::span(result->results, result->count);
+      std::ranges::for_each(results_span, [](AdaptiveRouteResult64& res) {
+         free(res.selected_model);
+         if (res.alternatives) {
+            auto alternatives_span = std::span(res.alternatives, res.alternatives_count);
+            std::ranges::for_each(alternatives_span, [](char* str) { free(str); });
+            free(res.alternatives);
+         }
+      });
+      free(result->results);
+   }
+   free(result);
+}
+
+AdaptiveBatchRouteResult64* adaptive_router_route_batch_f64(
     AdaptiveRouter* router,
     const double* embeddings,
     size_t n_embeddings,
@@ -325,7 +351,7 @@ AdaptiveBatchRouteResult* adaptive_router_route_batch_f64(
   }
 
   try {
-    auto* batch_result = static_cast<AdaptiveBatchRouteResult*>(malloc(sizeof(AdaptiveBatchRouteResult)));
+    auto* batch_result = static_cast<AdaptiveBatchRouteResult64*>(malloc(sizeof(AdaptiveBatchRouteResult64)));
     if (!batch_result) {
       return nullptr;
     }
@@ -337,14 +363,14 @@ AdaptiveBatchRouteResult* adaptive_router_route_batch_f64(
       return batch_result;
     }
 
-    batch_result->results = static_cast<AdaptiveRouteResult*>(malloc(sizeof(AdaptiveRouteResult) * n_embeddings));
+    batch_result->results = static_cast<AdaptiveRouteResult64*>(malloc(sizeof(AdaptiveRouteResult64) * n_embeddings));
     if (!batch_result->results) {
       free(batch_result);
       return nullptr;
     }
 
     // Initialize all results to zero
-    std::fill_n(batch_result->results, n_embeddings, AdaptiveRouteResult{});
+    std::fill_n(batch_result->results, n_embeddings, AdaptiveRouteResult64{});
 
     // Route each embedding using the double version
     for (size_t result_idx = 0; result_idx < n_embeddings; ++result_idx) {

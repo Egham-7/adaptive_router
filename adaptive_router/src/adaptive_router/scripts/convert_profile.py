@@ -84,7 +84,7 @@ def main() -> int:
 
     # Check same format
     if args.input.suffix.lower() == output_path.suffix.lower():
-        print(f"Error: Input and output have same format", file=sys.stderr)
+        print("Error: Input and output have same format", file=sys.stderr)
         return 1
 
     # Check overwrite

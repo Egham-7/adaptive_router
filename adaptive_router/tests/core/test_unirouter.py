@@ -227,7 +227,7 @@ class TestRouterServiceMocked:
         mock_embedding_model = Mock()
 
         # Mock profile metadata
-        mock_metadata = Mock()
+        Mock()
         from adaptive_router.models.storage import RouterProfile, ProfileMetadata
         from adaptive_router.models.api import Model
 

@@ -53,7 +53,6 @@ def _mock_router_factory(route_side_effect=None):
     from adaptive_router.models.storage import (
         RouterProfile,
         ProfileMetadata,
-        ClusterCentersData,
     )
     from adaptive_router.models.api import Model
 

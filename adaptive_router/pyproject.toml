@@ -27,15 +27,12 @@ dependencies = [
   # Data Validation
   "pydantic>=2.11.5,<3",
   "sentence-transformers>=5.2.0,<6",
-  # S3 Storage
-  "boto3>=1.34.0,<2",
   # Data Processing
   "datasets>=4.4.1",
   "polars>=1.35.2",
   # Evaluation
   "deepeval>=3.7.0",
   "einops>=0.8.1",
-  "msgpack>=1.1.2,<2",
   # ML Framework (required by sentence-transformers/transformers)
   "torch>=2.9.1",
 ]

@@ -32,7 +32,7 @@ from adaptive_router.models.storage import RouterProfile
 from adaptive_router.exceptions.core import (
     InvalidModelFormatError,
 )
-from adaptive_core_ext import Router as CoreRouter
+from adaptive_core_ext import Router as CoreRouter, RouterProfile as CppRouterProfile
 
 
 logger = logging.getLogger(__name__)
@@ -136,11 +136,12 @@ class ModelRouter:
         path = Path(path)
         logger.info(f"Loading router from MessagePack file: {path}")
 
-        # Load profile to get metadata (need to read it ourselves)
-        import msgpack
+        # Load profile using C++ core (handles msgpack deserialization)
+        cpp_profile = CppRouterProfile.from_msgpack_file(str(path))
 
-        with open(path, "rb") as f:
-            profile_dict = msgpack.unpackb(f.read(), raw=False)
+        # Convert to JSON to get full metadata structure
+        profile_json = cpp_profile.to_json_string()
+        profile_dict = json.loads(profile_json)
         profile = RouterProfile(**profile_dict)
 
         # Validate model IDs

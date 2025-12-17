@@ -6,11 +6,12 @@ with per-cluster error rates, cost optimization, and model capability matching.
 Basic Usage:
     >>> from adaptive_router import ModelRouter, ModelSelectionRequest
     >>>
-    >>> # Load from JSON profile
-    >>> router = ModelRouter.from_json_file("router_profile.json")
+    >>> # Load from profile (auto-detects JSON or MessagePack)
+    >>> router = ModelRouter.from_file("router_profile.json")
     >>> request = ModelSelectionRequest(prompt="Write a Python function", cost_bias=0.5)
     >>> response = router.select_model(request)
     >>> print(f"Selected: {response.model_id}")
+    >>> print(f"Available models: {[m.unique_id() for m in router.profile.models]}")
 
 Advanced Usage:
     >>> from adaptive_router import Trainer, RouterProfile
@@ -85,7 +86,7 @@ from .models.health import HealthResponse
 # Package metadata
 # ============================================================================
 
-__version__ = "0.1.0"
+__version__ = "0.1.3"
 
 __all__ = [
     # ========================================================================

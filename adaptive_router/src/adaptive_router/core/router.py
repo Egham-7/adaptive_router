@@ -62,8 +62,7 @@ class ModelRouter:
     with Python handling embedding computation via SentenceTransformer.
 
     Use factory methods to create instances:
-        - ModelRouter.from_json_file(path) - Load from JSON file
-        - ModelRouter.from_msgpack_file(path) - Load from MessagePack file
+        - ModelRouter.from_file(path) - Load from file (auto-detects JSON/MessagePack)
         - ModelRouter.from_profile(profile) - Load from RouterProfile object (in-memory)
     """
 
@@ -71,46 +70,70 @@ class ModelRouter:
         self,
         core_router: CoreRouter,
         embedding_model: SentenceTransformer,
-        profile_metadata: Any,
+        profile: RouterProfile,
     ) -> None:
         """Initialize ModelRouter (use factory methods instead).
 
         Args:
             core_router: Initialized C++ core router
             embedding_model: SentenceTransformer for computing embeddings
-            profile_metadata: Profile metadata for configuration
+            profile: RouterProfile object for configuration and model access
         """
         self._core_router = core_router
         self._embedding_model = embedding_model
-        self._metadata = profile_metadata
-        self.default_cost_preference = profile_metadata.routing.default_cost_preference
-        self._dtype = profile_metadata.dtype
+        self._profile = profile
+        self._metadata = profile.metadata
+        self.default_cost_preference = profile.metadata.routing.default_cost_preference
+        self._dtype = profile.metadata.dtype
+
+    @property
+    def profile(self) -> RouterProfile:
+        """The loaded RouterProfile."""
+        return self._profile
 
     @classmethod
-    def from_json_file(cls, path: str | Path) -> ModelRouter:
-        """Create router from JSON profile file.
+    def from_file(cls, path: str | Path) -> "ModelRouter":
+        """Create router from profile file, auto-detecting format.
+
+        Supports JSON (.json) and MessagePack (.msgpack) formats.
 
         Args:
-            path: Path to JSON profile file
+            path: Path to profile file
 
         Returns:
-            Initialized ModelRouter
+            ModelRouter with profile accessible via .profile property
+
+        Raises:
+            ValueError: If file extension is not .json or .msgpack
+            FileNotFoundError: If file does not exist
+
+        Example:
+            router = ModelRouter.from_file("profile.json")
+            response = router.select_model(request)
+            available_models = router.profile.models
         """
         path = Path(path)
+
+        if path.suffix.lower() == ".msgpack":
+            return cls._load_msgpack(path)
+        elif path.suffix.lower() == ".json":
+            return cls._load_json(path)
+        else:
+            raise ValueError(
+                f"Unsupported file format: {path.suffix}. Use .json or .msgpack"
+            )
+
+    @classmethod
+    def _load_json(cls, path: Path) -> "ModelRouter":
+        """Load router from JSON file."""
         logger.info(f"Loading router from JSON file: {path}")
 
-        # Load profile to get metadata
         with open(path) as f:
             profile_dict = json.load(f)
         profile = RouterProfile(**profile_dict)
 
-        # Validate model IDs
         cls._validate_model_ids_static(profile.models)
-
-        # Initialize C++ core from JSON file
         core_router = CoreRouter.from_json_file(str(path))
-
-        # Load embedding model
         embedding_model = cls._load_embedding_model_static(
             profile.metadata.embedding_model,
             profile.metadata.allow_trust_remote_code,
@@ -121,36 +144,19 @@ class ModelRouter:
             f"{len(profile.models)} models"
         )
 
-        return cls(core_router, embedding_model, profile.metadata)
+        return cls(core_router, embedding_model, profile)
 
     @classmethod
-    def from_msgpack_file(cls, path: str | Path) -> ModelRouter:
-        """Create router from MessagePack binary profile file.
-
-        Args:
-            path: Path to MessagePack (.msgpack) profile file
-
-        Returns:
-            Initialized ModelRouter
-        """
-        path = Path(path)
+    def _load_msgpack(cls, path: Path) -> "ModelRouter":
+        """Load router from MessagePack file."""
         logger.info(f"Loading router from MessagePack file: {path}")
 
-        # Load profile using C++ core (handles msgpack deserialization)
         cpp_profile = CppRouterProfile.from_msgpack_file(str(path))
-
-        # Convert to JSON to get full metadata structure
-        profile_json = cpp_profile.to_json_string()
-        profile_dict = json.loads(profile_json)
+        profile_dict = json.loads(cpp_profile.to_json_string())
         profile = RouterProfile(**profile_dict)
 
-        # Validate model IDs
         cls._validate_model_ids_static(profile.models)
-
-        # Initialize C++ core from MessagePack file
         core_router = CoreRouter.from_msgpack_file(str(path))
-
-        # Load embedding model
         embedding_model = cls._load_embedding_model_static(
             profile.metadata.embedding_model,
             profile.metadata.allow_trust_remote_code,
@@ -161,7 +167,7 @@ class ModelRouter:
             f"{len(profile.models)} models"
         )
 
-        return cls(core_router, embedding_model, profile.metadata)
+        return cls(core_router, embedding_model, profile)
 
     @classmethod
     def from_profile(cls, profile: RouterProfile) -> ModelRouter:
@@ -193,7 +199,7 @@ class ModelRouter:
             f"{len(profile.models)} models"
         )
 
-        return cls(core_router, embedding_model, profile.metadata)
+        return cls(core_router, embedding_model, profile)
 
     @staticmethod
     def _validate_model_ids_static(models: list[Model]) -> None:

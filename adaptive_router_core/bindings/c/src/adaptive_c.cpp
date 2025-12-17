@@ -7,6 +7,7 @@
 
 #include "adaptive.h"
 #include <adaptive_core/router.hpp>
+#include <adaptive_core/profile.hpp>
 
 // Internal helper to convert std::string to C string
 static char* str_duplicate(const std::string& str) {
@@ -44,11 +45,12 @@ AdaptiveRouter* adaptive_router_create(const char* profile_path) {
   }
 
   try {
-    auto result = Router::from_file(profile_path);
+    auto profile = RouterProfile::from_json(profile_path);
+    auto result = Router::from_profile(std::move(profile));
     if (!result) {
       return nullptr;
     }
-    return reinterpret_cast<AdaptiveRouter*>(new Router(std::move(*result)));
+    return reinterpret_cast<AdaptiveRouter*>(new Router(std::move(result.value())));
   } catch (const std::exception&) {
     return nullptr;
   } catch (...) {
@@ -62,11 +64,12 @@ AdaptiveRouter* adaptive_router_create_from_json(const char* json_str) {
   }
 
   try {
-    auto result = Router::from_json_string(json_str);
+    auto profile = RouterProfile::from_json_string(json_str);
+    auto result = Router::from_profile(std::move(profile));
     if (!result) {
       return nullptr;
     }
-    return reinterpret_cast<AdaptiveRouter*>(new Router(std::move(*result)));
+    return reinterpret_cast<AdaptiveRouter*>(new Router(std::move(result.value())));
   } catch (const std::exception&) {
     return nullptr;
   } catch (...) {
@@ -80,11 +83,12 @@ AdaptiveRouter* adaptive_router_create_from_binary(const char* path) {
   }
 
   try {
-    auto result = Router::from_binary(path);
+    auto profile = RouterProfile::from_binary(path);
+    auto result = Router::from_profile(std::move(profile));
     if (!result) {
       return nullptr;
     }
-    return reinterpret_cast<AdaptiveRouter*>(new Router(std::move(*result)));
+    return reinterpret_cast<AdaptiveRouter*>(new Router(std::move(result.value())));
   } catch (const std::exception&) {
     return nullptr;
   } catch (...) {
@@ -185,8 +189,9 @@ AdaptiveRouteResult* adaptive_router_route_double(AdaptiveRouter* router, const 
 
   try {
     auto* cpp_router = reinterpret_cast<Router*>(router);
-    // Use the templated route method
-    auto response = cpp_router->route(embedding, embedding_size, cost_bias);
+    // Convert double embedding to float
+    std::vector<float> float_embedding(embedding, embedding + embedding_size);
+    auto response = cpp_router->route(float_embedding.data(), float_embedding.size(), cost_bias);
 
     auto* result = static_cast<AdaptiveRouteResult*>(malloc(sizeof(AdaptiveRouteResult)));
     if (!result) {

@@ -50,12 +50,13 @@ public:
 
     RouteResponse resp{
       .selected_model = scores.empty() ? "" : scores[0].model_id,
+      .alternatives = {},
       .cluster_id = cid,
       .cluster_distance = static_cast<float>(dist)
     };
 
     if (scores.size() > 1) {
-      int n = std::min<int>(scores.size() - 1, profile_.metadata.routing.max_alternatives);
+      int n = std::min(static_cast<int>(scores.size()) - 1, profile_.metadata.routing.max_alternatives);
       auto alts = scores | std::views::drop(1) | std::views::take(n)
                         | std::views::transform(&ModelScore::model_id);
       resp.alternatives.assign(alts.begin(), alts.end());

@@ -23,6 +23,19 @@ public:
   using value_type = Scalar;  // Enable type detection in std::visit
 
   static Result<RouterT, std::string> from_profile(RouterProfile profile) noexcept {
+    // Validate dtype compatibility before initialization
+    if constexpr (std::is_same_v<Scalar, float>) {
+      if (!profile.is_float32()) {
+        return Unexpected("RouterT<float> requires float32 profile, but profile dtype is " +
+                         profile.metadata.dtype);
+      }
+    } else if constexpr (std::is_same_v<Scalar, double>) {
+      if (!profile.is_float64()) {
+        return Unexpected("RouterT<double> requires float64 profile, but profile dtype is " +
+                         profile.metadata.dtype);
+      }
+    }
+
     try {
       RouterT r;
       r.init(std::move(profile));

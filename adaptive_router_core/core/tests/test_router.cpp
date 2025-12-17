@@ -508,3 +508,23 @@ TEST_F(RouterTest, DoublePrecisionClusterDistance) {
   EXPECT_GE(response.cluster_distance, 0.0);
 }
 
+TEST_F(RouterTest, DtypeMismatchValidation) {
+  // Test that RouterT<float> rejects float64 profiles and vice versa
+
+  // Create float64 profile
+  auto float64_profile = RouterProfile::from_json_string(kTestProfileJsonFloat64);
+
+  // Try to create RouterT<float> with float64 profile - should fail
+  auto result_float = Router::from_profile(float64_profile);
+  EXPECT_FALSE(result_float.has_value());
+  EXPECT_TRUE(result_float.error().find("requires float32 profile") != std::string::npos);
+
+  // Create float32 profile
+  auto float32_profile = RouterProfile::from_json_string(kTestProfileJson);
+
+  // Try to create RouterT<double> with float32 profile - should fail
+  auto result_double = RouterT<double>::from_profile(float32_profile);
+  EXPECT_FALSE(result_double.has_value());
+  EXPECT_TRUE(result_double.error().find("requires float64 profile") != std::string::npos);
+}
+

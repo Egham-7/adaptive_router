@@ -184,19 +184,6 @@ Handles K-means clustering operations for prompt assignment.
 - Manages cluster metadata and silhouette scores
 - Fast cluster assignment (<5ms per request)
 
-### Profile Loaders
-
-**Files**: `adaptive_router/loaders/`
-
-Profile loading system with multiple implementations:
-
-**LocalFileProfileLoader** (`loaders/local.py`):
-- Loads profiles from local filesystem
-- Supports JSON format
-- Used for testing and offline development
-
-
-
 ### Data Models
 
 **Files**: `adaptive_router/models/`

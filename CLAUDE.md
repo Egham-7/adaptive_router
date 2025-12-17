@@ -47,11 +47,7 @@ adaptive_router/  # Repository root (workspace root)
 │   │   ├── router.py                         # ModelRouter - main routing logic
 │   │   ├── cluster_engine.py                 # ClusterEngine - K-means clustering
 │   │   └── feature_extractor.py              # FeatureExtractor - sentence transformers + TF-IDF
-│   ├── loaders/                              # Profile loading implementations
-│   │   ├── __init__.py
-│   │   ├── base.py                           # ProfileLoader base class
-│   │   ├── local.py                          # LocalFileProfileLoader
-│   │   └── minio.py                          # MinIOProfileLoader - S3 profile loading
+
 │   ├── models/                               # Pydantic data models and schemas
 │   │   ├── __init__.py
 │   │   ├── api.py                            # Request/response models
@@ -148,13 +144,9 @@ Use adaptive_router as a Python library in your code:
 ```python
 from adaptive_router.core.router import ModelRouter
 from adaptive_router.models.api import ModelSelectionRequest
-from adaptive_router.loaders.local import LocalFileProfileLoader
 
-# Initialize profile loader from local file
-loader = LocalFileProfileLoader("/path/to/profile.json")
-
-# Initialize router with loaded profile
-router = ModelRouter.from_local_file("/path/to/profile.json")
+# Initialize router from local file
+router = ModelRouter.from_json_file("/path/to/profile.json")
 
 # Select optimal model based on prompt
 request = ModelSelectionRequest(
@@ -450,31 +442,6 @@ The `FeatureExtractor` converts prompts to feature vectors:
 - **GPU-accelerated inference** on T4 GPUs (Modal deployment)
 - **Cached models** for fast subsequent requests
 
-### Profile Loaders
-
-**Files**: `adaptive_router/loaders/`
-
-Profile loading system with multiple implementations:
-
-**Base Loader** (`loaders/base.py`):
-
-- `ProfileLoader` abstract base class
-- Defines interface for loading cluster profiles
-- Returns `ClusterProfile` with centers, error rates, scalers
-
-**MinIO Loader** (`loaders/minio.py`):
-
-- `MinIOProfileLoader` for S3-compatible storage
-- Loads profiles from Railway-hosted MinIO
-- Supports environment-based configuration
-- Connection pooling and retry logic
-
-**Local Loader** (`loaders/local.py`):
-
-- `LocalFileProfileLoader` for file-based profiles
-- Used for testing and offline development
-- Supports pickle and JSON formats
-
 ### External Model Registry Integration
 
 **Files**: `app/registry/`
@@ -749,10 +716,9 @@ modal cancel adaptive-router
 # Test model router
 python -c "
 from adaptive_router.core.router import ModelRouter
-from adaptive_router.loaders.local import LocalFileProfileLoader
+from adaptive_router.models.api import ModelSelectionRequest
 
-loader = LocalFileProfileLoader('/path/to/profile.json')
-router = ModelRouter.from_local_file('/path/to/profile.json')
+router = ModelRouter.from_json_file('/path/to/profile.json')
 request = ModelSelectionRequest(prompt='Explain quantum computing', cost_bias=0.5)
 response = router.select_model(request)
 print(f'Selected: {response.model_id}')

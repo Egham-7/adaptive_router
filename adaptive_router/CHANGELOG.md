@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Core Routing**: Cluster-based intelligent LLM model selection using UniRouter algorithm
 - **Feature Extraction**: Semantic embeddings via SentenceTransformers (all-MiniLM-L6-v2)
 - **ModelRouter**: Main routing class with `select_model()` and `route()` methods
-- **Profile Loaders**: Local file and MinIO/S3 profile loading support
+- **Profile Loading**: Load profiles from JSON or MessagePack files via factory methods
 - **Cost Optimization**: Configurable `cost_bias` parameter (0.0=cheapest, 1.0=best quality)
 - **Python Library**: Import and use directly in Python applications
 - **C++ Core** (optional): High-performance inference via `adaptive-router-core` and `adaptive-router-core-cu12`

@@ -7,7 +7,7 @@ strongly typed to catch data corruption early and provide better IDE support.
 
 from typing import Literal
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, model_validator
 
 from adaptive_router.models.api import Model
 
@@ -174,82 +174,3 @@ class RouterProfile(BaseModel):
             raise ValueError("Error rates validation failed:\n" + "\n".join(errors))
 
         return self
-
-
-class MinIOSettings(BaseModel):
-    """MinIO storage configuration for library usage.
-
-    This class requires explicit constructor arguments for all parameters.
-    It does not automatically read from environment variables.
-
-    Args:
-        endpoint_url: MinIO endpoint URL (must start with http:// or https://)
-        root_user: MinIO root username
-        root_password: MinIO root password
-        bucket_name: S3 bucket name
-        region: AWS region (default: us-east-1, ignored by MinIO but required by boto3)
-        profile_key: Key for profile in bucket (default: global/profile.json)
-        connect_timeout: Connection timeout in seconds (default: 5)
-        read_timeout: Read timeout in seconds (default: 30)
-
-    Example:
-        >>> from adaptive_router.models.storage import MinIOSettings
-        >>> settings = MinIOSettings(
-        ...     endpoint_url="https://minio.example.com",
-        ...     root_user="admin",
-        ...     root_password="password123",
-        ...     bucket_name="adaptive-router-profiles"
-        ... )
-    """
-
-    endpoint_url: str = Field(..., description="MinIO endpoint URL")
-    root_user: str = Field(..., description="MinIO root username")
-    root_password: str = Field(..., description="MinIO root password")
-
-    bucket_name: str = Field(..., description="S3 bucket name")
-    region: str = Field(default="us-east-1", description="AWS region")
-    profile_key: str = Field(
-        default="global/profile.json", description="Profile key in bucket"
-    )
-
-    # Timeout configuration (configurable for different network conditions)
-    connect_timeout: int = Field(default=5, description="Connection timeout in seconds")
-    read_timeout: int = Field(default=30, description="Read timeout in seconds")
-
-    @field_validator("endpoint_url")
-    @classmethod
-    def validate_endpoint_url(cls, v: str) -> str:
-        """Validate that endpoint_url is a valid URL.
-
-        Args:
-            v: The endpoint URL to validate
-
-        Returns:
-            The validated URL
-
-        Raises:
-            ValueError: If URL doesn't start with http:// or https://
-        """
-        if not v.startswith(("http://", "https://")):
-            raise ValueError(
-                f"endpoint_url must start with http:// or https://, got: {v}"
-            )
-        return v
-
-    @field_validator("bucket_name")
-    @classmethod
-    def validate_bucket_name(cls, v: str) -> str:
-        """Validate that bucket_name is not empty.
-
-        Args:
-            v: The bucket name to validate
-
-        Returns:
-            The validated bucket name
-
-        Raises:
-            ValueError: If bucket name is empty
-        """
-        if not v or not v.strip():
-            raise ValueError("bucket_name cannot be empty")
-        return v.strip()

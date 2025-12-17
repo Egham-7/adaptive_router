@@ -21,15 +21,14 @@ import numpy as np
 
 from sentence_transformers import SentenceTransformer
 
-from adaptive_router.loaders.local import LocalFileProfileLoader
-from adaptive_router.loaders.minio import MinIOProfileLoader
+
 from adaptive_router.models.api import (
     Alternative,
     Model,
     ModelSelectionRequest,
     ModelSelectionResponse,
 )
-from adaptive_router.models.storage import RouterProfile, MinIOSettings
+from adaptive_router.models.storage import RouterProfile
 from adaptive_router.exceptions.core import (
     InvalidModelFormatError,
 )
@@ -66,7 +65,6 @@ class ModelRouter:
         - ModelRouter.from_json_file(path) - Load from JSON file
         - ModelRouter.from_msgpack_file(path) - Load from MessagePack file
         - ModelRouter.from_profile(profile) - Load from RouterProfile object (in-memory)
-        - ModelRouter.from_minio(settings) - Load from MinIO/S3
     """
 
     def __init__(
@@ -102,8 +100,9 @@ class ModelRouter:
         logger.info(f"Loading router from JSON file: {path}")
 
         # Load profile to get metadata
-        loader = LocalFileProfileLoader(str(path))
-        profile = loader.load_profile()
+        with open(path) as f:
+            profile_dict = json.load(f)
+        profile = RouterProfile(**profile_dict)
 
         # Validate model IDs
         cls._validate_model_ids_static(profile.models)
@@ -194,20 +193,6 @@ class ModelRouter:
         )
 
         return cls(core_router, embedding_model, profile.metadata)
-
-    @classmethod
-    def from_minio(cls, settings: MinIOSettings) -> ModelRouter:
-        """Create router by loading profile from MinIO/S3.
-
-        Args:
-            settings: MinIO connection settings
-
-        Returns:
-            Initialized ModelRouter
-        """
-        loader = MinIOProfileLoader.from_settings(settings)
-        profile = loader.load_profile()
-        return cls.from_profile(profile)
 
     @staticmethod
     def _validate_model_ids_static(models: list[Model]) -> None:

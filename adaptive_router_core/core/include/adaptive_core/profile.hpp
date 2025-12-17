@@ -47,6 +47,24 @@ struct RouterProfile {
   // Load from JSON string
   [[nodiscard]] static RouterProfile from_json_string(const std::string& json_str);
 
+  // Load from MessagePack binary string
+  [[nodiscard]] static RouterProfile from_binary_string(const std::string& data);
+
+  // Save to JSON file
+  void to_json(const std::string& path) const;
+
+  // Save to JSON string
+  [[nodiscard]] std::string to_json_string() const;
+
+  // Save to MessagePack binary file
+  void to_binary(const std::string& path) const;
+
+  // Save to MessagePack binary string
+  [[nodiscard]] std::string to_binary_string() const;
+
+  // Validate profile data
+  void validate() const;
+
   // Type helpers
   [[nodiscard]] bool is_float32() const {
     return std::holds_alternative<EmbeddingMatrixT<float>>(cluster_centers);

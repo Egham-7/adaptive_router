@@ -95,6 +95,42 @@ NB_MODULE(adaptive_core_ext, m) {
       .def_ro("cluster_id", &RouteResponse::cluster_id)
       .def_ro("cluster_distance", &RouteResponse::cluster_distance);
 
+  nb::class_<RouterProfile>(m, "RouterProfile")
+      // Static factory methods for loading profiles
+      .def_static("from_json_file", &RouterProfile::from_json,
+          "path"_a, "Load profile from JSON file")
+      .def_static("from_json_string", &RouterProfile::from_json_string,
+          "json_str"_a, "Load profile from JSON string")
+      .def_static("from_msgpack_file", &RouterProfile::from_binary,
+          "path"_a, "Load profile from MessagePack binary file")
+      .def_static("from_msgpack_bytes", [] (nb::bytes data) {
+          return RouterProfile::from_binary_string(std::string(data.c_str(), data.size()));
+      }, "data"_a, "Load profile from MessagePack binary data")
+
+      // Serialization methods
+      .def("to_json_string", &RouterProfile::to_json_string,
+          "Serialize profile to JSON string")
+      .def("to_json_file", &RouterProfile::to_json,
+          "path"_a, "Write profile to JSON file")
+      .def("to_msgpack_bytes", [] (const RouterProfile& p) {
+          std::string data = p.to_binary_string();
+          return nb::bytes(data.data(), data.size());
+      }, "Serialize profile to MessagePack binary data")
+      .def("to_msgpack_file", &RouterProfile::to_binary,
+          "path"_a, "Write profile to MessagePack binary file")
+
+      // Validation
+      .def("validate", &RouterProfile::validate,
+          "Validate profile data")
+
+      // Properties
+      .def_prop_ro("n_clusters", [](const RouterProfile& p) { return p.metadata.n_clusters; })
+      .def_prop_ro("embedding_model", [](const RouterProfile& p) { return p.metadata.embedding_model; })
+      .def_prop_ro("dtype", [](const RouterProfile& p) { return p.metadata.dtype; })
+      .def_prop_ro("silhouette_score", [](const RouterProfile& p) { return p.metadata.silhouette_score; })
+      .def_prop_ro("is_float32", &RouterProfile::is_float32)
+      .def_prop_ro("is_float64", &RouterProfile::is_float64);
+
   nb::class_<RouterWrapper>(m, "Router")
       .def_static("from_json_file", [](const std::string& path) {
         return RouterWrapper::from_profile(RouterProfile::from_json(path));

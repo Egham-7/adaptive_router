@@ -98,7 +98,7 @@ class ModelSelectionRequest(BaseModel):
         tool_call: Current tool call being made (for function calling detection)
         tools: Available tool definitions
         user_id: User identifier for tracking
-        models: Optional list of registry models to restrict routing to
+        models: Optional list of model IDs (strings) to restrict routing to
         cost_bias: Cost preference (0.0=cheap, 1.0=quality)
         complexity_threshold: Complexity threshold for model selection
         token_threshold: Token count threshold for model selection
@@ -106,7 +106,7 @@ class ModelSelectionRequest(BaseModel):
 
     prompt: str = Field(..., min_length=1)
     user_id: str | None = None
-    models: list[Model] | None = None
+    models: list[str] | None = None
     cost_bias: float | None = None
 
     @field_validator("cost_bias")

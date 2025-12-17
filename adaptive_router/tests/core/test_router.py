@@ -111,15 +111,8 @@ class TestModelRouter:
         assert response.model_id
 
     def test_select_model_with_full_models(self, mock_router: ModelRouter) -> None:
-        """Test model selection when full models are provided."""
-        sample_models = [
-            Model(
-                provider="openai",
-                model_name="gpt-4",
-                cost_per_1m_input_tokens=3.0,
-                cost_per_1m_output_tokens=27.0,
-            ),
-        ]
+        """Test model selection when model IDs are provided as strings."""
+        sample_models = ["openai/gpt-4"]
 
         request = ModelSelectionRequest(
             prompt="Write a Python function to implement quicksort",
@@ -172,15 +165,8 @@ class TestModelRouter:
         assert isinstance(response.alternatives, list)
 
     def test_partial_model_filtering(self, mock_router: ModelRouter) -> None:
-        """Test filtering with partial Model (minimal fields)."""
-        partial_models = [
-            Model(
-                provider="openai",
-                model_name="gpt-4",
-                cost_per_1m_input_tokens=3.0,
-                cost_per_1m_output_tokens=27.0,
-            )
-        ]
+        """Test filtering with model ID strings."""
+        partial_models = ["openai/gpt-4"]
 
         request = ModelSelectionRequest(
             prompt="Generate a creative story",
@@ -232,14 +218,7 @@ class TestModelRouterEdgeCases:
     def test_invalid_cost_bias_raises_error(self) -> None:
         """Test that invalid cost bias values raise validation errors."""
 
-        models = [
-            Model(
-                provider="openai",
-                model_name="gpt-5",
-                cost_per_1m_input_tokens=3.0,
-                cost_per_1m_output_tokens=27.0,
-            )
-        ]
+        models = ["openai/gpt-5"]
 
         # Test cost_bias > 1.0 raises ValidationError
         with pytest.raises(Exception) as exc_info:
@@ -385,14 +364,7 @@ class TestModelFiltering:
         self, filtering_mock_router: ModelRouter
     ) -> None:
         """Test filtering with single model - should only return that model."""
-        single_model = [
-            Model(
-                provider="openai",
-                model_name="gpt-4",
-                cost_per_1m_input_tokens=3.0,
-                cost_per_1m_output_tokens=27.0,
-            )
-        ]
+        single_model = ["openai/gpt-4"]
 
         request = ModelSelectionRequest(
             prompt="Test prompt",
@@ -414,18 +386,8 @@ class TestModelFiltering:
     ) -> None:
         """Test filtering with multiple models - should only return from filtered set."""
         multiple_models = [
-            Model(
-                provider="openai",
-                model_name="gpt-4",
-                cost_per_1m_input_tokens=3.0,
-                cost_per_1m_output_tokens=27.0,
-            ),
-            Model(
-                provider="anthropic",
-                model_name="claude-3-sonnet-20240229",
-                cost_per_1m_input_tokens=3.0,
-                cost_per_1m_output_tokens=15.0,
-            ),
+            "openai/gpt-4",
+            "anthropic/claude-3-sonnet-20240229",
         ]
 
         request = ModelSelectionRequest(

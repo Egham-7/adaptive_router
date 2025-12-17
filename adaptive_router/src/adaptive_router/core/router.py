@@ -300,9 +300,7 @@ class ModelRouter:
         cost_preference = self._resolve_cost_preference(cost_bias, request.cost_bias)
 
         # 3. Extract model IDs from request.models if provided
-        model_filter: list[str] = []
-        if request.models:
-            model_filter = [model.unique_id() for model in request.models]
+        model_filter: list[str] = request.models or []
 
         # 4. Route using C++ core (cluster assignment + model scoring)
         core_response = self._core_router.route(

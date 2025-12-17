@@ -46,8 +46,8 @@ Documentation = "https://docs.llmadaptive.uk"
 
 
 [project.optional-dependencies]
-cpu = ["adaptive-router-core>=0.1.9,<1"]
-cu12 = ["adaptive-router-core-cu12>=0.1.9,<1 ; sys_platform == 'linux'"]
+cpu = ["adaptive-router-core>=0.1.10,<1"]
+cu12 = ["adaptive-router-core-cu12>=0.1.10,<1 ; sys_platform == 'linux'"]
 
 
 [dependency-groups]

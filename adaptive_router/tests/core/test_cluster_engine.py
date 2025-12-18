@@ -182,7 +182,9 @@ class TestClusterEngineDtype:
         centers_dtype = cluster_engine.kmeans.cluster_centers_.dtype
         assert centers_dtype == cluster_engine.embedding_dtype
 
-    def test_from_fitted_state_with_dtype(self, cluster_engine: ClusterEngine, sample_questions: list[str]) -> None:
+    def test_from_fitted_state_with_dtype(
+        self, cluster_engine: ClusterEngine, sample_questions: list[str]
+    ) -> None:
         """Test from_fitted_state() uses provided dtype."""
         cluster_engine.fit(sample_questions)
 
@@ -198,7 +200,9 @@ class TestClusterEngineDtype:
         assert restored.embedding_dtype == np.float64
         assert restored.kmeans.cluster_centers_.dtype == np.float64
 
-    def test_from_fitted_state_defaults_float32(self, cluster_engine: ClusterEngine, sample_questions: list[str]) -> None:
+    def test_from_fitted_state_defaults_float32(
+        self, cluster_engine: ClusterEngine, sample_questions: list[str]
+    ) -> None:
         """Test from_fitted_state() defaults to float32."""
         cluster_engine.fit(sample_questions)
 

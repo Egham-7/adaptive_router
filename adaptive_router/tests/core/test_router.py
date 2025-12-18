@@ -494,6 +494,7 @@ class TestModelRouterDtypeConversion:
         mock_embedding_model.encode.return_value = float64_embedding
 
         from adaptive_router.models.storage import RouterProfile, ProfileMetadata
+
         mock_profile = Mock(spec=RouterProfile)
         mock_profile.metadata = Mock(spec=ProfileMetadata)
         mock_profile.metadata.routing = Mock()
@@ -535,6 +536,7 @@ class TestModelRouterDtypeConversion:
         mock_embedding_model.encode.return_value = float32_embedding
 
         from adaptive_router.models.storage import RouterProfile, ProfileMetadata
+
         mock_profile = Mock(spec=RouterProfile)
         mock_profile.metadata = Mock(spec=ProfileMetadata)
         mock_profile.metadata.routing = Mock()
@@ -576,6 +578,7 @@ class TestModelRouterDtypeConversion:
         mock_embedding_model.encode.return_value = float32_embedding
 
         from adaptive_router.models.storage import RouterProfile, ProfileMetadata
+
         mock_profile = Mock(spec=RouterProfile)
         mock_profile.metadata = Mock(spec=ProfileMetadata)
         mock_profile.metadata.routing = Mock()
@@ -632,4 +635,3 @@ class TestModelRouterCleanup:
 
         # Cleanup should have been called
         assert router._core_router.cleanup.called
-

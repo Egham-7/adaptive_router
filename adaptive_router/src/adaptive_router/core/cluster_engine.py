@@ -216,9 +216,7 @@ class ClusterEngine(BaseEstimator):
         # Auto-detect and store embedding dtype from model output
         if self.embedding_dtype is None:
             self.embedding_dtype = embeddings.dtype
-            logger.info(
-                f"Detected embedding dtype from model: {self.embedding_dtype}"
-            )
+            logger.info(f"Detected embedding dtype from model: {self.embedding_dtype}")
 
         # Preserve model's native dtype
         return embeddings.astype(self.embedding_dtype, copy=False)

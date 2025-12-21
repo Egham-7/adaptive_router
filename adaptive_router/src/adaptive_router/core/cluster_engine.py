@@ -5,6 +5,7 @@ Simplified for better DX with Trainer and ModelRouter - accepts only strings.
 
 import logging
 import platform
+from typing import Literal
 
 import numpy as np
 import numpy.typing as npt
@@ -242,7 +243,7 @@ class ClusterEngine(BaseEstimator):
         """Check if the engine has been fitted."""
         return self.is_fitted_flag
 
-    def get_dtype_string(self) -> str:
+    def get_dtype_string(self) -> Literal["float32", "float64"]:
         """Get the detected embedding dtype as string ('float32' or 'float64').
 
         Returns:

@@ -47,6 +47,24 @@ def get_model_count(profile: RouterProfile) -> int:
     return len(data.get("models", []))
 
 
+def profile_to_data(profile: RouterProfile) -> dict:
+    """Return a canonical Python dict representation of a profile."""
+    json_str = profile.to_json_string()
+    return json.loads(json_str)
+
+
+def validate_conversion(original: RouterProfile, output_path: Path) -> None:
+    """Ensure the converted profile matches the original profile."""
+    converted = load_profile(output_path)
+    converted.validate()
+    original_data = profile_to_data(original)
+    converted_data = profile_to_data(converted)
+    if original_data != converted_data:
+        raise ValueError(
+            "Conversion validation failed: output profile differs from input profile"
+        )
+
+
 def print_summary(profile: RouterProfile, input_path: Path, output_path: Path) -> None:
     """Print conversion summary."""
     input_size = input_path.stat().st_size
@@ -100,6 +118,7 @@ def main() -> int:
         profile = load_profile(args.input)
         profile.validate()
         save_profile(profile, output_path, args.compact)
+        validate_conversion(profile, output_path)
 
         if not args.quiet:
             print_summary(profile, args.input, output_path)

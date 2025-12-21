@@ -1,0 +1,58 @@
+[project]
+name = "swe-bench-adaptive"
+version = "0.1.0"
+description = "SWE-bench benchmarking for Adaptive AI router"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "sb-cli>=0.1.0",
+    "openai>=1.0.0",
+    "anthropic>=0.40.0",
+    "python-dotenv>=1.0.0",
+    "pandas>=2.0.0",
+    "tenacity>=8.2.0",
+    "tiktoken>=0.7.0",
+    "datasets>=2.14.0",
+    "aiolimiter>=1.1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "mypy>=1.0.0",
+    "black>=23.0.0",
+    "ruff>=0.1.0",
+    "pytest>=8.0.0",
+]
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+strict_equality = true
+
+[tool.black]
+line-length = 100
+target-version = ['py311']
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "pandas-stubs>=2.3.2.250926",
+]

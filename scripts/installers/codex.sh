@@ -197,11 +197,11 @@ configure_nordlys_provider() {
 
   # Check if config file exists and has content
   if [ -f "$config_file" ] && [ -s "$config_file" ]; then
-    log_info "Existing Codex configuration found, adding Nordlys provider..."
+    log_info "Existing Codex configuration found, adding Nordlys integration..."
 
     # Check if nordlys provider already exists
     if grep -q "\[model_providers\.nordlys\]" "$config_file" 2>/dev/null; then
-      log_info "Nordlys provider already configured, updating..."
+      log_info "Nordlys integration already configured, updating..."
       # Remove existing nordlys provider section
       sed -i '/\[model_providers\.nordlys\]/,/^$/d' "$config_file"
       sed -i '/\[model_providers\.nordlys\]/,/^\[/{ /^\[/!d; }' "$config_file"
@@ -233,9 +233,9 @@ configure_nordlys_provider() {
       sed -i "s/^model = .*/model = \"$model\"/" "$config_file"
     fi
 
-    log_success "Nordlys provider added to existing configuration"
+    log_success "Nordlys integration added to existing configuration"
   else
-    log_info "Creating new Codex configuration with Nordlys provider..."
+    log_info "Creating new Codex configuration with Nordlys integration..."
     # Create new config file
     cat > "$config_file" << EOF
 # Nordlys Configuration
@@ -249,7 +249,7 @@ base_url = "$API_BASE_URL"
 env_key = "NORDLYS_API_KEY"
 wire_api = "chat"
 EOF
-    log_success "New Codex configuration created with Nordlys provider"
+    log_success "New Codex configuration created with Nordlys integration"
   fi
 }
 
@@ -276,9 +276,9 @@ validate_model_override() {
     return 0
   fi
 
-  # Validate format: provider/model_id
+  # Validate format: author/model_id
   if [[ ! "$model" =~ ^[a-zA-Z0-9_-]+/[a-zA-Z0-9_.-]+$ ]]; then
-    log_error "Model format invalid. Use format: provider/model_id (e.g., anthropic/claude-sonnet-4-5, openai/gpt-5-codex) or use nordlys/nordlys-code for Nordlys model"
+    log_error "Model format invalid. Use format: author/model_id (e.g., nordlys/nordlys-code)"
     return 1
   fi
   return 0
@@ -326,7 +326,7 @@ configure_codex() {
     echo ""
     echo "🎯 Option 3: Customize model (Advanced)"
     echo "   export NORDLYS_API_KEY='your-api-key-here'"
-    echo "   export NORDLYS_MODEL='anthropic/claude-sonnet-4-5'  # or nordlys/nordlys-code for Nordlys model"
+    echo "   export NORDLYS_MODEL='nordlys/nordlys-code'"
     echo "   curl -fsSL https://raw.githubusercontent.com/Egham-7/nordlys/main/scripts/installers/codex.sh | bash"
     echo ""
     echo "⚙️  Option 4: Manual configuration (Advanced users)"
@@ -378,7 +378,7 @@ configure_codex() {
 
   ensure_dir_exists "$CONFIG_DIR"
 
-  # Configure Codex with Nordlys provider
+  # Configure Codex with Nordlys integration
   local config_file="$CONFIG_DIR/config.toml"
   create_config_backup "$config_file"
   configure_nordlys_provider "$config_file" "$model" "$model_provider"
@@ -557,8 +557,7 @@ main() {
     echo "   Environment: \$NORDLYS_API_KEY"
     echo ""
     echo "💡 Pro Tips:"
-    echo "   • Nordlys model enabled by default for optimal cost/performance"
-    echo "   • Available models: anthropic/claude-sonnet-4-5, openai/gpt-5-codex, etc."
+    echo "   • Nordlys model enabled by default"
     echo "   • Use --sandbox workspace-write for file editing tasks"
     echo "   • Configure MCP servers for extended capabilities"
     echo "   • Create AGENTS.md for project-specific instructions"

@@ -1,6 +1,6 @@
-# Contributing to Adaptive
+# Contributing to Nordlys
 
-Thank you for your interest in contributing to Adaptive! This guide will help you get started with contributing to the project.
+Thank you for your interest in contributing to Nordlys! This guide will help you get started with contributing to the project.
 
 ## Getting Started
 
@@ -137,4 +137,4 @@ adaptive/
 
 ## License
 
-By contributing to Adaptive, you agree that your contributions will be licensed under the same license as the project.
+By contributing to Nordlys, you agree that your contributions will be licensed under the same license as the project.

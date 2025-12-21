@@ -188,7 +188,7 @@ create_opencode_config() {
   log_info "Creating OpenCode configuration..."
   create_config_backup "$config_file"
 
-  # If user gave NORDLYS_MODEL, use it; else default to router id.
+  # If user gave NORDLYS_MODEL, use it; else default to the Nordlys model id.
   local effective_model="$model"
   if [ -z "$effective_model" ]; then
     effective_model="$DEFAULT_MODEL"
@@ -286,7 +286,7 @@ main() {
 
   if [ -n "$model_override" ]; then
     if ! validate_model_override "$model_override"; then
-      log_error "Invalid NORDLYS_MODEL: '$model_override'. Use format: provider/model_id (e.g., anthropic/claude-sonnet-4-5)."
+      log_error "Invalid NORDLYS_MODEL: '$model_override'. Use format: author/model_id (e.g., nordlys/nordlys-code)."
       exit 1
     fi
     log_info "Using custom model override: $model_override"
@@ -322,7 +322,7 @@ main() {
     echo "╰──────────────────────────────────────────────╯"
     echo ""
     echo "🚀 Quick Start"
-    echo "   1) opencode auth login         # add 'nordlys' provider with your API key"
+    echo "   1) opencode auth login         # add 'nordlys' integration with your API key"
     echo "   2) opencode                    # open the TUI"
     echo "   3) /models                     # pick 'Nordlys / 🧠 Nordlys Model'"
     echo ""
@@ -339,7 +339,7 @@ main() {
     echo ""
     echo "🔧 Manual fallback:"
     echo "   curl -o $CONFIG_FILE https://raw.githubusercontent.com/Egham-7/nordlys/main/examples/opencode.json"
-    echo "   opencode auth login   # Other → provider id 'nordlys' → paste API key"
+    echo "   opencode auth login   # Other → integration id 'nordlys' → paste API key"
     exit 1
   fi
 }

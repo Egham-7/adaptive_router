@@ -185,9 +185,9 @@ validate_model_override() {
     return 0
   fi
 
-  # Validate format: provider/model_id
+  # Validate format: author/model_id
   if [[ ! "$model" =~ ^[a-zA-Z0-9_-]+/[a-zA-Z0-9_.-]+$ ]]; then
-    log_error "Model override format invalid. Use format: provider/model_id (e.g., anthropic/claude-sonnet-4-5) or use nordlys/nordlys-code for Nordlys model"
+    log_error "Model override format invalid. Use format: author/model_id (e.g., nordlys/nordlys-code)"
     return 1
   fi
   return 0
@@ -247,8 +247,8 @@ configure_claude() {
     echo ""
     echo "🎯 Option 3: Customize models (Advanced)"
     echo "   export NORDLYS_API_KEY='your-api-key-here'"
-    echo "   export NORDLYS_PRIMARY_MODEL='anthropic/claude-sonnet-4-5'  # or nordlys/nordlys-code for Nordlys model"
-    echo "   export NORDLYS_FAST_MODEL='anthropic/claude-4-5-haiku'  # or nordlys/nordlys-code for Nordlys model"
+    echo "   export NORDLYS_PRIMARY_MODEL='nordlys/nordlys-code'"
+    echo "   export NORDLYS_FAST_MODEL='nordlys/nordlys-code'"
     echo "   curl -fsSL https://raw.githubusercontent.com/Egham-7/nordlys/main/scripts/installers/claude-code.sh | bash"
     echo ""
      echo "⚙️  Option 4: Manual configuration (Advanced users)"
@@ -410,10 +410,9 @@ main() {
     echo "   API Logs: ~/.claude/logs/"
     echo ""
     echo "💡 Pro Tips:"
-    echo "   • Nordlys model enabled by default for optimal cost/performance"
-    echo "   • Current models: Claude Opus 4.1, Sonnet 4, Haiku 3.5"
+    echo "   • Nordlys model enabled by default"
     echo "   • Override models: NORDLYS_PRIMARY_MODEL, NORDLYS_FAST_MODEL env vars"
-    echo "   • Use provider/model_id format (e.g., anthropic/claude-sonnet-4-5)"
+    echo "   • Use author/model_id format (e.g., nordlys/nordlys-code)"
     echo ""
     echo "📖 Full Documentation: https://docs.llmadaptive.uk/developer-tools/claude-code"
     echo "🐛 Report Issues: https://github.com/Egham-7/nordlys/issues"

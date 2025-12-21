@@ -304,7 +304,7 @@ add_env_to_shell_config() {
 
   log_success "Environment variables added to $config_file"
   if [ "$model" = "$DEFAULT_MODEL" ]; then
-    log_info "GEMINI_MODEL set to nordlys/nordlys-code for Nordlys model (automatic model selection)"
+    log_info "GEMINI_MODEL set to nordlys/nordlys-code for Nordlys model (default)"
   else
     log_info "GEMINI_MODEL set to: $model"
   fi
@@ -323,9 +323,9 @@ validate_model_override() {
     return 0
   fi
 
-  # Validate format: provider/model_id
+  # Validate format: author/model_id
   if [[ ! "$model" =~ ^[a-zA-Z0-9_-]+/[a-zA-Z0-9_.-]+$ ]]; then
-    log_error "Model format invalid. Use format: provider/model_id (e.g., google/gemini-2-5-pro, anthropic/claude-sonnet-4-5) or use nordlys/nordlys-code for Nordlys model"
+    log_error "Model format invalid. Use format: author/model_id (e.g., nordlys/nordlys-code)"
     return 1
   fi
   return 0
@@ -376,7 +376,7 @@ configure_gemini() {
     echo ""
     echo "🎯 Option 3: Customize model (Advanced)"
     echo "   export NORDLYS_API_KEY='your-api-key-here'"
-    echo "   export NORDLYS_MODEL='google/gemini-2-5-pro'  # or nordlys/nordlys-code for Nordlys model"
+    echo "   export NORDLYS_MODEL='nordlys/nordlys-code'"
     echo "   curl -fsSL https://raw.githubusercontent.com/Egham-7/nordlys/main/scripts/installers/gemini-cli.sh | bash"
     echo ""
     echo "⚙️  Option 4: Manual configuration (Advanced users)"
@@ -488,15 +488,8 @@ main() {
     echo ""
     echo "💡 Pro Tips:"
     echo "   • Your API key is automatically saved to your shell config"
-    echo "   • GEMINI_MODEL set to nordlys/nordlys-code for Nordlys model (optimal cost/performance)"
-    echo "   • Set GEMINI_MODEL='google/gemini-2-5-pro' to override with a specific model"
-    echo "   • Use provider/model_id format (e.g., google/gemini-2-5-pro, anthropic/claude-sonnet-4-5)"
-    echo "   • Access to Anthropic Claude, OpenAI, and other models via Nordlys model"
-    echo ""
-    echo "🔄 Load Balancing & Fallbacks:"
-    echo "   • Nordlys automatically routes to the best available model"
-    echo "   • Higher rate limits through multi-provider load balancing"
-    echo "   • Automatic fallbacks if one provider fails"
+    echo "   • GEMINI_MODEL set to nordlys/nordlys-code for Nordlys model (recommended)"
+    echo "   • Set GEMINI_MODEL to another model ID if your team uses additional Nordlys models"
     echo ""
     echo "📖 Full Documentation: https://docs.llmadaptive.uk/developer-tools/gemini-cli"
     echo "🐛 Report Issues: https://github.com/Egham-7/nordlys/issues"

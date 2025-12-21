@@ -343,9 +343,9 @@ validate_model_override() {
     return 0
   fi
 
-  # Validate format: provider/model_id
+  # Validate format: author/model_id
   if [[ ! "$model" =~ ^[a-zA-Z0-9_-]+/[a-zA-Z0-9_.-]+$ ]]; then
-    log_error "Model format invalid. Use format: provider/model_id (e.g., anthropic/claude-sonnet-4-5, openai/gpt-5-codex) or use nordlys/nordlys-code for Nordlys model"
+    log_error "Model format invalid. Use format: author/model_id (e.g., nordlys/nordlys-code)"
     return 1
   fi
   return 0
@@ -394,7 +394,7 @@ configure_grok() {
     echo ""
     echo "🎯 Option 3: Customize model (Advanced)"
     echo "   export NORDLYS_API_KEY='your-api-key-here'"
-    echo "   export NORDLYS_MODEL='anthropic/claude-sonnet-4-5'  # or nordlys/nordlys-code for Nordlys model"
+    echo "   export NORDLYS_MODEL='nordlys/nordlys-code'"
     echo "   curl -fsSL https://raw.githubusercontent.com/Egham-7/nordlys/main/scripts/installers/grok-cli.sh | bash"
     echo ""
      echo "⚙️  Option 4: Manual configuration (Advanced users)"
@@ -406,8 +406,8 @@ configure_grok() {
     echo "{"
     echo '  "apiKey": "your_api_key_here",'
     echo '  "baseURL": "https://www.llmadaptive.uk/api/v1",'
-    echo '  "defaultModel": "",'
-    echo '  "models": ["anthropic/claude-sonnet-4-5","anthropic/claude-4-5-haiku","anthropic/claude-opus-4-1-20250805","openai/gpt-5-codex","google/gemini-2-5-pro"]'
+    echo '  "defaultModel": "nordlys/nordlys-code",'
+    echo '  "models": ["nordlys/nordlys-code"]'
     echo "}"
     echo "EOF"
     echo ""
@@ -536,7 +536,7 @@ main() {
     echo "   grok -p \"show me the package.json file\""
     echo "   grok -p \"create a React component for user authentication\""
     echo "   grok -d /path/to/project  # Set working directory"
-    echo "   grok --model anthropic/claude-sonnet-4-5  # Override model"
+    echo "   grok --model nordlys/nordlys-code  # Override model"
     echo ""
     echo "📊 Monitor Usage:"
     echo "   Dashboard: $API_KEY_URL"
@@ -544,8 +544,7 @@ main() {
      echo ""
      echo "💡 Pro Tips:"
      echo "   • Your API key is automatically saved to your shell config"
-     echo "   • Nordlys model enabled by default for optimal cost/performance"
-    echo "   • Available models: anthropic/claude-sonnet-4-5, anthropic/claude-4-5-haiku, openai/gpt-5-codex, google/gemini-2-5-pro, etc."
+    echo "   • Nordlys model enabled by default"
     echo "   • Use --max-tool-rounds to control execution complexity"
     echo "   • Create .grok/GROK.md for custom project instructions"
     echo "   • Add MCP servers with: grok mcp add server-name"
@@ -559,7 +558,7 @@ main() {
     echo "🔧 Manual Setup (if needed):"
     echo "   Configuration: ~/.grok/user-settings.json"
     echo "   Expected format:"
-    echo '   {"apiKey":"your_key","baseURL":"https://www.llmadaptive.uk/api/v1","defaultModel":"","models":[...]}'
+    echo '   {"apiKey":"your_key","baseURL":"https://www.llmadaptive.uk/api/v1","defaultModel":"nordlys/nordlys-code","models":["nordlys/nordlys-code"]}'
     echo ""
     echo "🆘 Get help: https://docs.llmadaptive.uk/troubleshooting"
     exit 1

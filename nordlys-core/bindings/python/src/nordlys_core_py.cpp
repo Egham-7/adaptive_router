@@ -3,8 +3,8 @@
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/vector.h>
 
-#include <adaptive_core/router.hpp>
-#include <adaptive_core/profile.hpp>
+#include <nordlys_core/router.hpp>
+#include <nordlys_core/profile.hpp>
 #include <variant>
 
 namespace nb = nanobind;
@@ -96,8 +96,8 @@ public:
   }
 };
 
-NB_MODULE(adaptive_core_ext, m) {
-  m.doc() = "Adaptive Router C++ Core - High-performance routing engine";
+NB_MODULE(nordlys_core_ext, m) {
+  m.doc() = "Nordlys Core - High-performance routing engine";
 
   nb::class_<RouteResponseT<float>>(m, "RouteResponse32")
       .def_ro("selected_model", &RouteResponseT<float>::selected_model)
@@ -191,5 +191,5 @@ NB_MODULE(adaptive_core_ext, m) {
       .def("cleanup", &RouterWrapper::cleanup, "Explicit cleanup to prevent memory leaks")
       .def_prop_ro("dtype", &RouterWrapper::get_dtype);
 
-  m.attr("__version__") = ADAPTIVE_VERSION;
+  m.attr("__version__") = NORDLYS_VERSION;
 }

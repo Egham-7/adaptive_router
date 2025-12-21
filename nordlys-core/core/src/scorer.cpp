@@ -1,4 +1,4 @@
-#include <adaptive_core/scorer.hpp>
+#include <nordlys_core/scorer.hpp>
 
 #include <algorithm>
 #include <cmath>

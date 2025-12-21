@@ -1,12 +1,12 @@
-#include <adaptive_core/cluster_backend.hpp>
+#include <nordlys_core/cluster_backend.hpp>
 
-#ifdef ADAPTIVE_HAS_CUDA
-#include <adaptive_core/cuda/cluster_cuda.hpp>
+#ifdef NORDLYS_HAS_CUDA
+#include <nordlys_core/cuda/cluster_cuda.hpp>
 #include <cuda_runtime.h>
 #endif
 
 bool cuda_available() noexcept {
-#ifdef ADAPTIVE_HAS_CUDA
+#ifdef NORDLYS_HAS_CUDA
   int device_count = 0;
   cudaError_t err = cudaGetDeviceCount(&device_count);
   return err == cudaSuccess && device_count > 0;
@@ -23,7 +23,7 @@ std::unique_ptr<IClusterBackendT<float>> create_cluster_backend(ClusterBackendTy
       return std::make_unique<CpuClusterBackendT<float>>();
 
     case ClusterBackendType::CUDA:
-#ifdef ADAPTIVE_HAS_CUDA
+#ifdef NORDLYS_HAS_CUDA
       if (cuda_available()) {
         return std::make_unique<CudaClusterBackendT<float>>();
       }
@@ -32,7 +32,7 @@ std::unique_ptr<IClusterBackendT<float>> create_cluster_backend(ClusterBackendTy
 
     case ClusterBackendType::Auto:
     default:
-#ifdef ADAPTIVE_HAS_CUDA
+#ifdef NORDLYS_HAS_CUDA
       if (cuda_available()) {
         return std::make_unique<CudaClusterBackendT<float>>();
       }
@@ -49,7 +49,7 @@ std::unique_ptr<IClusterBackendT<double>> create_cluster_backend(ClusterBackendT
       return std::make_unique<CpuClusterBackendT<double>>();
 
     case ClusterBackendType::CUDA:
-#ifdef ADAPTIVE_HAS_CUDA
+#ifdef NORDLYS_HAS_CUDA
       if (cuda_available()) {
         return std::make_unique<CudaClusterBackendT<double>>();
       }
@@ -58,7 +58,7 @@ std::unique_ptr<IClusterBackendT<double>> create_cluster_backend(ClusterBackendT
 
     case ClusterBackendType::Auto:
     default:
-#ifdef ADAPTIVE_HAS_CUDA
+#ifdef NORDLYS_HAS_CUDA
       if (cuda_available()) {
         return std::make_unique<CudaClusterBackendT<double>>();
       }

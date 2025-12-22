@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include <adaptive_core/scorer.hpp>
+#include <nordlys_core/scorer.hpp>
 
 TEST(ModelScorerTest, EmptyScorer) {
   ModelScorer scorer;

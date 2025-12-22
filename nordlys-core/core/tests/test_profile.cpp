@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <cstdio>
 #include <random>
-#include <adaptive_core/profile.hpp>
+#include <nordlys_core/profile.hpp>
 
 // Suppress nodiscard warnings in tests since EXPECT_THROW requires ignoring return values
 #pragma GCC diagnostic ignored "-Wunused-result"

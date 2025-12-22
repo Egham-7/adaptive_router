@@ -1,4 +1,4 @@
-"""Routing models for the adaptive router library.
+"""Routing models for the nordlys library.
 
 This module contains models used by the routing engine for scoring models,
 tracking routing decisions, and managing model metadata. These are the public

@@ -5,7 +5,7 @@ import json
 import sys
 from pathlib import Path
 
-from adaptive_core_ext import RouterProfile
+from nordlys_core_ext import RouterProfile
 
 
 def get_output_path(input_path: Path, output: Path | None) -> Path:

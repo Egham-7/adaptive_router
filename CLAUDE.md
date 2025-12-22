@@ -99,8 +99,8 @@ nordlys/  # Repository root (workspace root)
 
 **Package Dependencies:**
 
-- The library (`adaptive_router/`) has its own `pyproject.toml` with ML dependencies (PyTorch, sentence-transformers, scikit-learn, etc.)
-- The app (`pyproject.toml` root) depends on `adaptive-router` via local path dependency
+- The library (`nordlys/`) has its own `pyproject.toml` with ML dependencies (PyTorch, sentence-transformers, scikit-learn, etc.)
+- The app (`pyproject.toml` root) depends on `nordlys` via local path dependency
 - Both packages are installed in editable mode during development
 
 ## Environment Configuration
@@ -139,11 +139,11 @@ LOG_LEVEL=INFO                  # Logging level
 
 ### 1. Library Mode (Python Import)
 
-Use adaptive_router as a Python library in your code:
+Use nordlys as a Python library in your code:
 
 ```python
-from adaptive_router.core.router import ModelRouter
-from adaptive_router.models.api import ModelSelectionRequest
+from nordlys.core.router import ModelRouter
+from nordlys.models.api import ModelSelectionRequest
 
 # Initialize router from local file
 router = ModelRouter.from_json_file("/path/to/profile.json")
@@ -168,10 +168,10 @@ uv sync
 
 # Deploy to Modal (requires Modal CLI and account)
 # Deploy from repository root - Modal will use workspace structure
-modal deploy adaptive_router_app/adaptive_router_app/main.py
+modal deploy nordlys_app/nordlys_app/main.py
 
 # Or run locally in development
-fastapi dev adaptive_router_app/adaptive_router_app/main.py
+fastapi dev nordlys_app/nordlys_app/main.py
 
 # Server starts on http://0.0.0.0:8000
 # API docs available at http://localhost:8000/docs
@@ -202,9 +202,9 @@ Access interactive API docs at `http://localhost:8000/docs`
 The project uses a **UV workspace** for unified dependency management:
 
 - **Single lockfile**: `uv.lock` at repository root ensures consistent dependencies
-- **Workspace members**: `adaptive_router` (library) and `adaptive_router_app` (FastAPI app)
-- **Inter-package dependencies**: `adaptive_router_app` depends on `adaptive-router` via `workspace = true`
-- **Modal deployment**: Workspace is copied to `/root/adaptive_router` and synced from app package
+- **Workspace members**: `nordlys` (library) and `nordlys_app` (FastAPI app)
+- **Inter-package dependencies**: `nordlys_app` depends on `nordlys` via `workspace = true`
+- **Modal deployment**: Workspace is copied to `/root/nordlys` and synced from app package
 
 ### Local Development
 
@@ -215,25 +215,25 @@ The project uses a **UV workspace** for unified dependency management:
 uv sync  # Syncs entire workspace from root
 
 # Or sync specific package
-uv sync --package adaptive-router-app
+uv sync --package nordlys-app
 
 # Run commands for specific package
-uv run --package adaptive-router-app pytest
+uv run --package nordlys-app pytest
 
 # Start the FastAPI server (development mode with auto-reload)
-fastapi dev adaptive_router_app/adaptive_router_app/main.py
+fastapi dev nordlys_app/nordlys_app/main.py
 
 # Or use Hypercorn directly (production-like)
-hypercorn adaptive_router_app.main:app --bind 0.0.0.0:8000
+hypercorn nordlys_app.main:app --bind 0.0.0.0:8000
 
 # Start with custom configuration
-HOST=0.0.0.0 PORT=8001 hypercorn adaptive_router_app.main:app --bind 0.0.0.0:8001
+HOST=0.0.0.0 PORT=8001 hypercorn nordlys_app.main:app --bind 0.0.0.0:8001
 
 # Start with debug logging
-DEBUG=true hypercorn adaptive_router_app.main:app --bind 0.0.0.0:8000
+DEBUG=true hypercorn nordlys_app.main:app --bind 0.0.0.0:8000
 
 # For multi-process deployment
-hypercorn adaptive_router_app.main:app --bind 0.0.0.0:8000 --workers 4
+hypercorn nordlys_app.main:app --bind 0.0.0.0:8000 --workers 4
 ```
 
 ### Code Quality
@@ -323,7 +323,7 @@ uv run pytest
 uv run pytest --cov
 
 # Run specific test file
-uv run pytest adaptive_router/tests/unit/core/test_config.py
+uv run pytest nordlys/tests/unit/core/test_config.py
 
 # Run with verbose output
 uv run pytest -v
@@ -347,7 +347,7 @@ The service exposes a FastAPI REST API that accepts model selection requests and
         "model": "gpt-4",
         "temperature": 0.7
     },
-    "adaptive_router": {
+    "nordlys": {
         "models": [
             {
                 "provider": "openai",
@@ -406,7 +406,7 @@ The service exposes a FastAPI REST API that accepts model selection requests and
 
 ### Model Router
 
-**File**: `adaptive_router/core/router.py`
+**File**: `nordlys/core/router.py`
 
 The `ModelRouter` class is the main entry point for intelligent model selection:
 
@@ -419,7 +419,7 @@ The `ModelRouter` class is the main entry point for intelligent model selection:
 
 ### Cluster Engine
 
-**File**: `adaptive_router/core/cluster_engine.py`
+**File**: `nordlys/core/cluster_engine.py`
 
 The `ClusterEngine` handles K-means clustering operations:
 
@@ -431,7 +431,7 @@ The `ClusterEngine` handles K-means clustering operations:
 
 ### Feature Extractor
 
-**File**: `adaptive_router/core/feature_extractor.py`
+**File**: `nordlys/core/feature_extractor.py`
 
 The `FeatureExtractor` converts prompts to feature vectors:
 
@@ -559,7 +559,7 @@ Cluster profiles (centers, error rates, scalers) are stored in **Modal Volumes**
 **Profile Storage Configuration**:
 
 - `PROFILE_PATH` environment variable points to the profile JSON file
-- Default location in Modal: `/data/profile.json` (mounted to adaptive-router-data volume)
+- Default location in Modal: `/data/profile.json` (mounted to nordlys-data volume)
 
 **Profile Structure**:
 
@@ -607,7 +607,7 @@ RUN pip install uv && uv sync
 COPY . .
 EXPOSE 8000
 
-CMD ["fastapi", "dev", "adaptive_router_app/adaptive_router_app/main.py"]
+CMD ["fastapi", "dev", "nordlys_app/nordlys_app/main.py"]
 ```
 
 ### Modal Deployment
@@ -616,16 +616,16 @@ CMD ["fastapi", "dev", "adaptive_router_app/adaptive_router_app/main.py"]
 
 ```bash
 # Deploy to Modal
-modal deploy adaptive_router_app/adaptive_router_app/main.py
+modal deploy nordlys_app/nordlys_app/main.py
 
 # View logs
-modal logs adaptive-router
+modal logs nordlys
 
 # Stop deployment
-modal cancel adaptive-router
+modal cancel nordlys
 ```
 
-**Modal Configuration** (in `adaptive_router_app/adaptive_router_app/main.py`):
+**Modal Configuration** (in `nordlys_app/nordlys_app/main.py`):
 
 - GPU: T4 (16GB VRAM)
 - Memory: 8GB
@@ -676,7 +676,7 @@ modal cancel adaptive-router
 - Verify all dependencies installed: `uv install`
 - Check port availability (default: 8000)
 - For Modal deployment: verify Modal CLI is installed and authenticated
-- Ensure you're using the correct command: `fastapi dev adaptive_router_app/adaptive_router_app/main.py` (local) or `modal deploy adaptive_router_app/adaptive_router_app/main.py` (Modal)
+- Ensure you're using the correct command: `fastapi dev nordlys_app/nordlys_app/main.py` (local) or `modal deploy nordlys_app/nordlys_app/main.py` (Modal)
 
 **Modal deployment issues**
 
@@ -698,7 +698,7 @@ modal cancel adaptive-router
 - Verify input format matches ModelSelectionRequest schema
 - Check prompt length is reasonable (no hard limit, but very long prompts are slower)
 - Ensure router profile loaded correctly (check startup logs)
-- Enable debug logging: `DEBUG=true fastapi dev adaptive_router_app/adaptive_router_app/main.py`
+- Enable debug logging: `DEBUG=true fastapi dev nordlys_app/nordlys_app/main.py`
 
 **Performance issues**
 
@@ -715,8 +715,8 @@ modal cancel adaptive-router
 ```bash
 # Test model router
 python -c "
-from adaptive_router.core.router import ModelRouter
-from adaptive_router.models.api import ModelSelectionRequest
+from nordlys.core.router import ModelRouter
+from nordlys.models.api import ModelSelectionRequest
 
 router = ModelRouter.from_json_file('/path/to/profile.json')
 request = ModelSelectionRequest(prompt='Explain quantum computing', cost_bias=0.5)
@@ -735,7 +735,7 @@ python -c "import psutil; print(f'Memory: {psutil.virtual_memory().percent}%')"
 
 ```bash
 # Start with debug logging
-DEBUG=true fastapi dev adaptive_router_app/adaptive_router_app/main.py
+DEBUG=true fastapi dev nordlys_app/nordlys_app/main.py
 
 # Check service health
 curl -X GET http://localhost:8000/health
@@ -750,13 +750,13 @@ curl -X POST http://localhost:8000/select-model \
 
 ```bash
 # Deploy to Modal
-modal deploy adaptive_router_app/adaptive_router_app/main.py
+modal deploy nordlys_app/nordlys_app/main.py
 
 # View logs
-modal logs adaptive-router
+modal logs nordlys
 
 # Check GPU availability
-modal run adaptive-router -c "python -c 'import torch; print(torch.cuda.is_available())'"
+modal run nordlys -c "python -c 'import torch; print(torch.cuda.is_available())'"
 ```
 
 ## Performance Benchmarks

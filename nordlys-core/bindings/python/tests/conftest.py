@@ -81,7 +81,7 @@ def sample_profile_json_float64() -> str:
 @pytest.fixture
 def router(sample_profile_json: str):
     """Create a Router instance from sample profile."""
-    from adaptive_core_ext import Router
+    from nordlys_core_ext import Router
 
     return Router.from_json_string(sample_profile_json)
 
@@ -89,6 +89,6 @@ def router(sample_profile_json: str):
 @pytest.fixture
 def router_float64(sample_profile_json_float64: str):
     """Create a float64 Router instance from sample profile."""
-    from adaptive_core_ext import Router
+    from nordlys_core_ext import Router
 
     return Router.from_json_string(sample_profile_json_float64)

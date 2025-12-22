@@ -2,7 +2,7 @@
 # This example defines model pricing directly in config (no API calls for pricing)
 
 [api]
-adaptive_api_key = "${ADAPTIVE_API_KEY}"
+nordlys_api_key = "${NORDLYS_API_KEY}"
 base_url = "https://api.llmadaptive.uk/v1"
 
 [dataset]

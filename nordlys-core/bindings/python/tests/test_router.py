@@ -9,7 +9,7 @@ class TestRouterCreation:
 
     def test_from_json_string(self, sample_profile_json: str):
         """Test creating router from JSON string."""
-        from adaptive_core_ext import Router
+        from nordlys_core_ext import Router
 
         router = Router.from_json_string(sample_profile_json)
         assert router.get_n_clusters() == 3
@@ -17,14 +17,14 @@ class TestRouterCreation:
 
     def test_from_json_file(self, sample_profile_path):
         """Test creating router from JSON file."""
-        from adaptive_core_ext import Router
+        from nordlys_core_ext import Router
 
         router = Router.from_json_file(str(sample_profile_path))
         assert router.get_n_clusters() == 3
 
     def test_invalid_json_raises(self):
         """Test that invalid JSON raises an error."""
-        from adaptive_core_ext import Router
+        from nordlys_core_ext import Router
 
         with pytest.raises(RuntimeError):
             Router.from_json_string("not valid json")
@@ -42,7 +42,7 @@ class TestRouting:
 
     def test_route_float32(self, router, sample_embedding):
         """Test routing with float32 embedding."""
-        from adaptive_core_ext import RouteResponse32
+        from nordlys_core_ext import RouteResponse32
 
         response = router.route(sample_embedding, cost_bias=0.5)
 
@@ -54,7 +54,7 @@ class TestRouting:
 
     def test_route_float64(self, router_float64):
         """Test routing with float64 embedding."""
-        from adaptive_core_ext import RouteResponse64
+        from nordlys_core_ext import RouteResponse64
 
         embedding = np.array([0.0, 0.9, 0.1, 0.0], dtype=np.float64)
         response = router_float64.route(embedding, cost_bias=0.5)

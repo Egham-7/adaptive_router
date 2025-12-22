@@ -11,7 +11,7 @@ class TestRouterProfileCreation:
 
     def test_from_json_string(self, sample_profile_json: str):
         """Test creating profile from JSON string."""
-        from adaptive_core_ext import RouterProfile
+        from nordlys_core_ext import RouterProfile
 
         profile = RouterProfile.from_json_string(sample_profile_json)
         assert profile.n_clusters == 3
@@ -22,7 +22,7 @@ class TestRouterProfileCreation:
 
     def test_from_json_file(self, sample_profile_path: Path):
         """Test creating profile from JSON file."""
-        from adaptive_core_ext import RouterProfile
+        from nordlys_core_ext import RouterProfile
 
         profile = RouterProfile.from_json_file(str(sample_profile_path))
         assert profile.n_clusters == 3
@@ -30,7 +30,7 @@ class TestRouterProfileCreation:
 
     def test_from_msgpack_string(self, sample_profile_json: str):
         """Test creating profile from MessagePack string."""
-        from adaptive_core_ext import RouterProfile
+        from nordlys_core_ext import RouterProfile
 
         # First create a profile and serialize to msgpack
         profile = RouterProfile.from_json_string(sample_profile_json)
@@ -43,7 +43,7 @@ class TestRouterProfileCreation:
 
     def test_from_msgpack_file(self, tmp_path: Path, sample_profile_json: str):
         """Test creating profile from MessagePack file."""
-        from adaptive_core_ext import RouterProfile
+        from nordlys_core_ext import RouterProfile
 
         # Create profile and write to msgpack file
         profile = RouterProfile.from_json_string(sample_profile_json)
@@ -57,14 +57,14 @@ class TestRouterProfileCreation:
 
     def test_invalid_json_raises(self):
         """Test that invalid JSON raises an error."""
-        from adaptive_core_ext import RouterProfile
+        from nordlys_core_ext import RouterProfile
 
         with pytest.raises(RuntimeError):
             RouterProfile.from_json_string("not valid json")
 
     def test_float64_support(self, sample_profile_json_float64: str):
         """Test float64 profile creation."""
-        from adaptive_core_ext import RouterProfile
+        from nordlys_core_ext import RouterProfile
 
         profile = RouterProfile.from_json_string(sample_profile_json_float64)
         assert profile.dtype == "float64"
@@ -77,7 +77,7 @@ class TestRouterProfileSerialization:
 
     def test_json_round_trip(self, sample_profile_json: str):
         """Test JSON serialization round-trip."""
-        from adaptive_core_ext import RouterProfile
+        from nordlys_core_ext import RouterProfile
 
         # Load from JSON
         original = RouterProfile.from_json_string(sample_profile_json)
@@ -96,7 +96,7 @@ class TestRouterProfileSerialization:
 
     def test_msgpack_round_trip(self, sample_profile_json: str):
         """Test MessagePack serialization round-trip."""
-        from adaptive_core_ext import RouterProfile
+        from nordlys_core_ext import RouterProfile
 
         # Load from JSON
         original = RouterProfile.from_json_string(sample_profile_json)
@@ -115,7 +115,7 @@ class TestRouterProfileSerialization:
 
     def test_file_operations_json(self, tmp_path: Path, sample_profile_json: str):
         """Test JSON file operations."""
-        from adaptive_core_ext import RouterProfile
+        from nordlys_core_ext import RouterProfile
 
         # Create profile
         original = RouterProfile.from_json_string(sample_profile_json)
@@ -132,7 +132,7 @@ class TestRouterProfileSerialization:
 
     def test_file_operations_msgpack(self, tmp_path: Path, sample_profile_json: str):
         """Test MessagePack file operations."""
-        from adaptive_core_ext import RouterProfile
+        from nordlys_core_ext import RouterProfile
 
         # Create profile
         original = RouterProfile.from_json_string(sample_profile_json)
@@ -153,7 +153,7 @@ class TestRouterProfileValidation:
 
     def test_valid_profile_passes_validation(self, sample_profile_json: str):
         """Test that valid profiles pass validation."""
-        from adaptive_core_ext import RouterProfile
+        from nordlys_core_ext import RouterProfile
 
         profile = RouterProfile.from_json_string(sample_profile_json)
         # Should not raise
@@ -161,7 +161,7 @@ class TestRouterProfileValidation:
 
     def test_invalid_profile_fails_validation(self, sample_profile_json: str):
         """Test that invalid profiles fail validation."""
-        from adaptive_core_ext import RouterProfile
+        from nordlys_core_ext import RouterProfile
 
         # Create a profile with invalid data (e.g., negative n_clusters)
         invalid_json = json.loads(sample_profile_json)
@@ -178,7 +178,7 @@ class TestRouterProfileProperties:
 
     def test_properties_accessible(self, sample_profile_json: str):
         """Test that all properties are accessible."""
-        from adaptive_core_ext import RouterProfile
+        from nordlys_core_ext import RouterProfile
 
         profile = RouterProfile.from_json_string(sample_profile_json)
 

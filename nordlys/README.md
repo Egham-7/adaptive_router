@@ -7,21 +7,21 @@ This package contains the core logic used by Nordlys models. It is intended for 
 Install dependencies:
 
 ```bash
-uv sync --package adaptive_router
+uv sync --package nordlys
 ```
 
 Run tests:
 
 ```bash
-uv run pytest adaptive_router/tests/
+uv run pytest nordlys/tests/
 ```
 
 Formatting and checks:
 
 ```bash
-uv run black adaptive_router/
-uv run ruff check adaptive_router/
-uv run mypy adaptive_router/
+uv run black nordlys/
+uv run ruff check nordlys/
+uv run mypy nordlys/
 ```
 
 ## Links

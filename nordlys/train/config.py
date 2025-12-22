@@ -1,4 +1,4 @@
-"""TOML Configuration Schema for Adaptive Router Training.
+"""TOML Configuration Schema for Nordlys Training.
 
 This module defines Pydantic models for parsing and validating TOML configuration
 files used by the training script. It supports hybrid model loading (API fetch or
@@ -6,7 +6,7 @@ full TOML definition) and multiple output formats (local, S3, MinIO).
 
 Example TOML:
     [api]
-    adaptive_api_key = "${ADAPTIVE_API_KEY}"  # or direct value
+    nordlys_api_key = "${NORDLYS_API_KEY}"  # or direct value
 
     [dataset]
     path = "data/train.csv"
@@ -52,17 +52,17 @@ else:
 
 
 class APIConfig(BaseModel):
-    """API configuration for Adaptive Models API.
+    """API configuration for Nordlys API.
 
     Attributes:
-        adaptive_api_key: API key for Adaptive Models API (supports ${ENV_VAR} syntax)
+        nordlys_api_key: API key for Nordlys API (supports ${ENV_VAR} syntax)
         base_url: Optional custom API base URL
     """
 
-    adaptive_api_key: str
+    nordlys_api_key: str
     base_url: str = "https://api.llmadaptive.uk/v1"
 
-    @field_validator("adaptive_api_key")
+    @field_validator("nordlys_api_key")
     @classmethod
     def resolve_env_var(cls, v: str) -> str:
         """Resolve environment variable syntax ${VAR_NAME}."""
@@ -328,7 +328,7 @@ class TrainingConfig(BaseModel):
     """Root TOML configuration for training.
 
     Attributes:
-        api: Adaptive API configuration
+        api: Nordlys API configuration
         dataset: Dataset configuration
         models: List of models to train
         providers: Provider API configurations (keyed by provider name)

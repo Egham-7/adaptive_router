@@ -9,7 +9,7 @@ class TestBatchRouting:
 
     def test_batch_route_float32(self, router):
         """Test batch routing with float32 embeddings."""
-        from adaptive_core_ext import RouteResponse32
+        from nordlys_core_ext import RouteResponse32
 
         embeddings = np.array(
             [
@@ -30,7 +30,7 @@ class TestBatchRouting:
 
     def test_batch_route_float64(self, router_float64):
         """Test batch routing with float64 embeddings."""
-        from adaptive_core_ext import RouteResponse64
+        from nordlys_core_ext import RouteResponse64
 
         embeddings = np.array(
             [

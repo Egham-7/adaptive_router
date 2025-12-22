@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include <adaptive_core/router.hpp>
+#include <nordlys_core/router.hpp>
 
 // Suppress nodiscard warnings in tests since EXPECT_THROW requires ignoring return values
 #pragma GCC diagnostic ignored "-Wunused-result"

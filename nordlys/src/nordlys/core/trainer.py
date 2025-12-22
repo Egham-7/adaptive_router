@@ -790,7 +790,7 @@ class Trainer:
         path = Path(path)
 
         # Convert pydantic profile to JSON string, then to C++ profile
-        from adaptive_core_ext import RouterProfile as CoreProfile
+        from nordlys_core_ext import RouterProfile as CoreProfile
 
         profile_json = self._trained_profile.model_dump_json()
         core_profile = CoreProfile.from_json_string(profile_json)

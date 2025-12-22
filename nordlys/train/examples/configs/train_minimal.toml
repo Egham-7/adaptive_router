@@ -2,7 +2,7 @@
 # This example trains a router with 2 models, fetching pricing from API
 
 [api]
-adaptive_api_key = "${ADAPTIVE_API_KEY}"  # Will read from environment
+nordlys_api_key = "${NORDLYS_API_KEY}"  # Will read from environment
 base_url = "https://api.llmadaptive.uk/v1"
 
 [dataset]

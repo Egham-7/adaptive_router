@@ -19,10 +19,10 @@ from typing import Dict, List
 import httpx
 import polars as pl
 
-# Import from adaptive_router library
-from adaptive_router.core.trainer import Trainer
-from adaptive_router.models.api import Model
-from adaptive_router.models.train import ProviderConfig
+# Import from nordlys library
+from nordlys.core.trainer import Trainer
+from nordlys.models.api import Model
+from nordlys.models.train import ProviderConfig
 
 
 # Import from local train module
@@ -277,7 +277,7 @@ def train_router(config: TrainingConfig) -> None:
 
     # Initialize API client
     with AdaptiveModelsAPIClient(
-        config.api.adaptive_api_key, config.api.base_url
+        config.api.nordlys_api_key, config.api.base_url
     ) as api_client:
         # Load models (hybrid mode: TOML or API)
         logger.info("\nLoading models...")

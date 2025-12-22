@@ -2,7 +2,7 @@
 # This example saves the trained profile to S3/MinIO storage
 
 [api]
-adaptive_api_key = "${ADAPTIVE_API_KEY}"
+nordlys_api_key = "${NORDLYS_API_KEY}"
 
 [dataset]
 path = "train/examples/datasets/minimal_qa.parquet"
@@ -41,6 +41,6 @@ storage_type = "s3"
 endpoint_url = "https://s3.amazonaws.com"  # Or MinIO endpoint
 access_key_id = "${AWS_ACCESS_KEY_ID}"
 secret_access_key = "${AWS_SECRET_ACCESS_KEY}"
-bucket_name = "adaptive-router-profiles"
+bucket_name = "nordlys-profiles"
 region = "us-east-1"
 profile_key = "profiles/my-profile.json"

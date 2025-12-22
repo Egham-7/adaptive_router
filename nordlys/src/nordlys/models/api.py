@@ -1,7 +1,7 @@
 """Public API models for model selection requests and responses.
 
 This module contains the public-facing API models that external users interact with
-when making model selection requests to the adaptive router service.
+when making model selection requests to the nordlys service.
 """
 
 import math

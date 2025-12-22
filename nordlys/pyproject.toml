@@ -91,7 +91,7 @@ exclude = ["tests/", "scripts/"]
 
 [tool.ty.rules]
 unused-ignore-comment = "warn"
-# Ignore unresolved imports globally (for C++ extension module adaptive_core_ext)
+# Ignore unresolved imports globally (for C++ extension module nordlys_core_ext)
 unresolved-import = "ignore"
 
 [tool.pytest.ini_options]

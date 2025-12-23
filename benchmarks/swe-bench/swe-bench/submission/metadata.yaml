@@ -1,7 +1,7 @@
 # SWE-bench Leaderboard Submission Metadata
 # Update this file before submitting to the experiments repo
 
-name: "Nordlys-singularity"
+name: "nordly-hypernova"
 oss: true
 site: "https://github.com/Nordlys-Labs"
 

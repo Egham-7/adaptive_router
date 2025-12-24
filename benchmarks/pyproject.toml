@@ -13,6 +13,10 @@ dependencies = [
     # Profiling
     "pygithub>=2.0.0",
     "python-dotenv>=1.0.0",
+    # SWE-bench 2 (Modal execution via swe-rex)
+    "swe-rex[modal]>=0.2.0",
+    "swebench>=2.1.0",
+    "datasets>=2.0.0",
 ]
 
 [project.optional-dependencies]

@@ -1,60 +1,112 @@
-# SWE-bench with Nordlys
+# SWE-bench Benchmark (Modal Cloud)
 
-## Setup
+Custom SWE-bench agent using Modal cloud execution with Nordlys intelligent routing.
 
-1. Install:
-   ```bash
-   cd benchmarks
-   uv sync
-   uv tool install mini-swe-agent
-   ```
+## Quick Start
 
-2. Configure API:
-   ```bash
-   mini-extra config set ANTHROPIC_API_KEY "your-nordlys-api-key" #Anthropic is supported internally by mini-agent
-   mini-extra config set ANTHROPIC_API_BASE "https://api.llmadaptive.uk"
-   ```
-
-## Run
-
+### 1. Install Dependencies
 ```bash
-# Test (1 instance)
-uv run python swe-bench/swe-bench/src/run.py --skip-pricing --split test --slice 0:1 --output swe-bench/swe-bench/results/test
-
-# Full run
-uv run python swe-bench/swe-bench/src/run.py --skip-pricing --output swe-bench/swe-bench/results/full-run
+cd benchmarks
+uv sync
 ```
 
-## Options
+### 2. Configure Modal
+```bash
+modal setup
+```
 
-| Option | Description |
-|--------|-------------|
-| `--skip-pricing` | Skip cost calculation |
-| `--split` | test or dev |
-| `--slice` | Instance range (e.g., `0:5`) |
-| `--output` | Output directory |
-| `--workers` | Parallel workers (default: 4) |
+### 3. Set Environment Variables
+The `.env` file in `benchmarks/` should have:
+```bash
+NORDLYS_API_KEY=apk_...
+NORDLYS_API_BASE=https://api.nordlyslabs.com
+```
 
-## Submit for Evaluation
+### 4. Run Benchmark
+```bash
+cd benchmarks
 
-After a run completes, submit results for evaluation:
+# Test (5 instances)
+uv run python -m swe-bench-2.src.runner --slice 0:5
+
+# Full run (500 instances)
+uv run python -m swe-bench-2.src.runner
+```
+
+### 5. Submit for Evaluation
+```bash
+sb-cli submit swe-bench_verified test --predictions_path results/preds.json --run_id my-run
+sb-cli get-report swe-bench_verified test --run_id my-run
+```
+
+---
+
+## CLI Options
 
 ```bash
-# Submit results
-uv run sb-cli submit swe-bench_verified test \
-    --predictions_path results/my-run/all_preds.jsonl \
-    --run_id my-run-name
+uv run python -m swe-bench-2.src.runner [OPTIONS]
 
-# Check status
-uv run sb-cli list-runs swe-bench_verified test
+Options:
+  --subset     Dataset subset: verified, lite, full (default: verified)
+  --split      Dataset split (default: test)
+  --slice      Slice of instances, e.g., 0:10 (default: all)
+  --model      LLM model (default: anthropic/nordlys/nordlys-code)
+  --output     Output directory (default: results)
+  --workers    Parallel workers (default: 4)
+  --cost-limit Cost limit per instance (default: 3.0)
+  --max-steps  Max agent steps (default: 50)
+```
 
-# Get results (after evaluation completes)
-uv run sb-cli get-report swe-bench_verified test my-run-name
+## Optimizations
+
+The runner includes several optimizations for cost and speed:
+
+| Feature | Description |
+|---------|-------------|
+| **Parallel execution** | 4 concurrent Modal sandboxes (configurable via `--workers`) |
+| **Reduced idle timeout** | 90s instead of 600s (6.6x cost savings during LLM waits) |
+| **Resource allocation** | 0.5 CPU, 512 MiB memory per sandbox |
+| **Retry with backoff** | 3 retries with exponential backoff (1s, 2s, 4s) |
+| **Crash recovery** | Resume from last saved prediction if interrupted |
+| **Cost estimation** | Shows estimated Modal cost before running |
+| **Budget warning** | Prompts if estimated cost exceeds $30 |
+
+---
+
+## Architecture
+
+```
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│   runner.py │────▶│   agent.py  │────▶│  modal_env  │
+│             │     │  (LiteLLM)  │     │  (swe-rex)  │
+└─────────────┘     └─────────────┘     └─────────────┘
+       │                   │                   │
+       ▼                   ▼                   ▼
+  Load Dataset      LLM API Calls      Modal Cloud Exec
+```
+
+- **runner.py**: Orchestrates the benchmark run
+- **agent.py**: Agent logic using LiteLLM for LLM calls
+- **modal_env.py**: Modal deployment via swe-rex
+
+---
+
+## Output
+
+```
+results/
+├── preds.json          # Predictions for sb-cli submission
+└── trajs/              # Per-instance trajectories
+    ├── instance1.json
+    └── instance2.json
 ```
 
 
-First time setup requires API key:
-```bash
-uv run sb-cli gen-api-key your.email@example.com
-uv run sb-cli verify-api-key YOUR_CODE
-```
+---
+
+## Leaderboard Submission
+
+1. Fork https://github.com/swe-bench/experiments
+2. Create folder: `evaluation/verified/YYYYMMDD_nordlys-router/`
+3. Add: `predictions.json`, `metadata.yaml`
+4. Create PR with run_id
